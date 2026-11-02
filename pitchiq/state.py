@@ -19,8 +19,9 @@ _DEFAULTS: dict = {
     # Analysis settings
     "analysis_mode": "Standard",
     # Scout workspace (chat)
-    "chat_history": [],     # list[dict]: role, content, depth?, context?
-    "pending_prompt": None, # set by quick-prompt buttons
+    "chat_history": [],      # list[dict]: role, content, depth?, context?, evidence?
+    "chat_attachments": [],  # list[dict]: name, size_kb, status (attached via chat)
+    "pending_prompt": None,  # set by quick-prompt buttons
 }
 
 

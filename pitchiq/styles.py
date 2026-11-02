@@ -1,233 +1,193 @@
-"""Custom CSS theme for PitchIQ — consistent, high-contrast dark theme.
+"""Custom CSS for PitchIQ — minimal, modern dark theme.
 
-Pairs with .streamlit/config.toml (base = "dark") so native widgets and
-custom cards share one professional palette.
+Pairs with .streamlit/config.toml (base = "dark"). Design goals: generous
+whitespace, clean typography, subtle borders, no visual clutter.
 """
 
 CUSTOM_CSS = """
 <style>
 /* ---------- Palette ----------
-   bg:        #0d1b2a   card bg:   #152a3f
-   border:    #2a4663   accent:    #4da3ff
-   text:      #e8f1f9   muted:     #9fb6c9
+   bg:      #0e1117    surface:  #181c25
+   border:  #262b36    accent:   #7aa2f7
+   text:    #e6e9ef    muted:    #8b93a3
 --------------------------------- */
 
 /* ---------- Global ---------- */
 .block-container {
-    padding-top: 2.2rem;
-    padding-bottom: 3rem;
-    max-width: 1200px;
+    padding-top: 2.5rem;
+    padding-bottom: 4rem;
+    max-width: 880px;
+}
+h1, h2, h3, h4 {
+    letter-spacing: -0.01em;
 }
 
-/* ---------- Hero banner ---------- */
-.pitchiq-hero {
-    background: linear-gradient(135deg, #10263d 0%, #1d4e79 55%, #2a6f97 100%);
-    border: 1px solid #2a4663;
-    border-radius: 14px;
-    padding: 1.8rem 2.2rem;
-    margin-bottom: 1.4rem;
-    color: #ffffff;
-    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+/* ---------- Scout hero (empty state) ---------- */
+.scout-hero {
+    text-align: center;
+    margin: 14vh 0 2.5rem 0;
 }
-.pitchiq-hero h1 {
+.scout-hero h1 {
+    font-size: 2.3rem;
+    font-weight: 700;
+    color: #f2f4f8;
+    margin: 0 0 0.6rem 0;
+}
+.scout-hero p {
+    font-size: 1.05rem;
+    color: #8b93a3;
     margin: 0;
-    font-size: 2.1rem;
-    letter-spacing: 0.5px;
-    color: #ffffff;
-}
-.pitchiq-hero p {
-    margin: 0.35rem 0 0 0;
-    font-size: 1.02rem;
-    color: #cfe3f5;
-}
-.pitchiq-hero .version-badge {
-    display: inline-block;
-    margin-top: 0.7rem;
-    background: rgba(255, 255, 255, 0.14);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    border-radius: 999px;
-    padding: 0.15rem 0.8rem;
-    font-size: 0.78rem;
-    letter-spacing: 1px;
-    color: #ffffff;
 }
 
-/* ---------- Section cards ---------- */
+/* ---------- Tags on assistant messages ---------- */
+.depth-tag {
+    display: inline-block;
+    background: rgba(122, 162, 247, 0.12);
+    border: 1px solid rgba(122, 162, 247, 0.35);
+    color: #9db8f9;
+    border-radius: 999px;
+    padding: 0.08rem 0.65rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+}
+.demo-tag {
+    display: inline-block;
+    background: rgba(139, 147, 163, 0.1);
+    border: 1px solid #333945;
+    color: #8b93a3;
+    border-radius: 999px;
+    padding: 0.08rem 0.65rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    margin-left: 0.3rem;
+}
+
+/* ---------- Composer context line ---------- */
+.context-line {
+    color: #8b93a3;
+    font-size: 0.8rem;
+    margin: 0.15rem 0 0.4rem 0;
+}
+.context-line b { color: #aeb6c4; font-weight: 600; }
+
+/* ---------- Cards ---------- */
 .pitchiq-card {
-    background: #152a3f;
-    border: 1px solid #2a4663;
+    background: #181c25;
+    border: 1px solid #262b36;
     border-radius: 12px;
     padding: 1.2rem 1.4rem;
     margin-bottom: 1rem;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
-    color: #e8f1f9;
+    color: #e6e9ef;
 }
-.pitchiq-card h4 { margin-top: 0; color: #f2f7fc; }
-.pitchiq-card p { color: #c3d6e6; }
+.pitchiq-card h4 { margin-top: 0; color: #f2f4f8; }
+.pitchiq-card p { color: #aeb6c4; }
 
 /* ---------- Hitter report cards ---------- */
 .hitter-header {
     display: flex;
     align-items: baseline;
     gap: 0.6rem;
-    border-left: 5px solid #4da3ff;
+    border-left: 3px solid #7aa2f7;
     padding-left: 0.8rem;
     margin: 0.4rem 0 0.6rem 0;
 }
 .hitter-header .hitter-name {
-    font-size: 1.18rem;
+    font-size: 1.12rem;
     font-weight: 700;
-    color: #f2f7fc;
+    color: #f2f4f8;
 }
 .hitter-header .hitter-meta {
-    font-size: 0.88rem;
-    color: #9fb6c9;
+    font-size: 0.86rem;
+    color: #8b93a3;
 }
 
 /* ---------- Threat badges ---------- */
 .badge {
     display: inline-block;
     border-radius: 999px;
-    padding: 0.12rem 0.7rem;
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.5px;
+    padding: 0.1rem 0.65rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.4px;
     text-transform: uppercase;
 }
-.badge-high   { background: rgba(244, 98, 98, 0.18);  color: #ff8a8a; border: 1px solid #a14040; }
-.badge-medium { background: rgba(255, 190, 70, 0.16); color: #ffcf70; border: 1px solid #9a7a2e; }
-.badge-low    { background: rgba(80, 200, 120, 0.16); color: #7fe0a2; border: 1px solid #3e7d57; }
+.badge-high   { background: rgba(240, 100, 100, 0.12); color: #f28b8b; border: 1px solid #5c3434; }
+.badge-medium { background: rgba(240, 190, 90, 0.1);   color: #e5c07b; border: 1px solid #574a2c; }
+.badge-low    { background: rgba(110, 200, 140, 0.1);  color: #8fd4a8; border: 1px solid #2f4d3a; }
 
 /* ---------- Recommendation box ---------- */
 .rec-box {
-    background: #11314d;
-    border: 1px solid #2a4663;
-    border-left: 5px solid #4da3ff;
+    background: #161a22;
+    border: 1px solid #262b36;
+    border-left: 3px solid #7aa2f7;
     border-radius: 8px;
     padding: 0.8rem 1rem;
     margin: 0.5rem 0 0.9rem 0;
-    color: #d9e9f8;
-    font-size: 0.95rem;
+    color: #ccd3de;
+    font-size: 0.94rem;
 }
 .rec-box .rec-label {
-    font-weight: 700;
-    font-size: 0.78rem;
-    letter-spacing: 1px;
+    font-weight: 600;
+    font-size: 0.74rem;
+    letter-spacing: 0.8px;
     text-transform: uppercase;
-    color: #7cc0ff;
+    color: #9db8f9;
 }
 
-/* ---------- Upload cards ---------- */
-.upload-card-header {
-    display: flex;
-    align-items: center;
-    gap: 0.7rem;
-    margin-bottom: 0.2rem;
-}
-.upload-card-header .upload-icon {
-    font-size: 1.6rem;
-    background: #11314d;
-    border: 1px solid #2a4663;
-    border-radius: 10px;
-    padding: 0.35rem 0.55rem;
-}
-.upload-card-header .upload-title {
-    font-size: 1.08rem;
-    font-weight: 700;
-    color: #f2f7fc;
-}
-.upload-card-header .upload-sub {
-    font-size: 0.85rem;
-    color: #9fb6c9;
-}
-.upload-accent-mine { border-top: 4px solid #4da3ff; border-radius: 4px 4px 0 0; }
-.upload-accent-opp  { border-top: 4px solid #2ec4b6; border-radius: 4px 4px 0 0; }
-
+/* ---------- Upload file rows ---------- */
 .file-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 0.6rem;
-    background: #11314d;
-    border: 1px solid #2a4663;
+    background: #161a22;
+    border: 1px solid #262b36;
     border-radius: 8px;
     padding: 0.5rem 0.9rem;
     margin: 0.35rem 0;
 }
 .file-row .file-name {
-    font-weight: 600;
-    color: #e8f1f9;
-    font-size: 0.92rem;
+    font-weight: 500;
+    color: #e6e9ef;
+    font-size: 0.9rem;
     overflow-wrap: anywhere;
 }
 .file-row .file-size {
-    color: #9fb6c9;
-    font-size: 0.82rem;
+    color: #8b93a3;
+    font-size: 0.8rem;
     white-space: nowrap;
 }
 .file-row .file-status {
-    background: rgba(80, 200, 120, 0.16);
-    border: 1px solid #3e7d57;
-    color: #7fe0a2;
+    background: rgba(110, 200, 140, 0.1);
+    border: 1px solid #2f4d3a;
+    color: #8fd4a8;
     border-radius: 999px;
-    padding: 0.1rem 0.65rem;
-    font-size: 0.74rem;
-    font-weight: 700;
-    letter-spacing: 0.5px;
+    padding: 0.08rem 0.6rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.4px;
     text-transform: uppercase;
     white-space: nowrap;
 }
 
-/* ---------- Scout workspace context chips ---------- */
-.context-chip {
-    display: inline-block;
-    background: #11314d;
-    border: 1px solid #2a4663;
-    color: #cfe3f5;
-    border-radius: 999px;
-    padding: 0.25rem 0.85rem;
-    margin: 0.15rem 0.35rem 0.15rem 0;
-    font-size: 0.84rem;
-    font-weight: 600;
-}
-.context-chip.warn {
-    background: rgba(255, 190, 70, 0.12);
-    border-color: #9a7a2e;
-    color: #ffcf70;
-}
-.depth-tag {
-    display: inline-block;
-    background: rgba(77, 163, 255, 0.14);
-    border: 1px solid #2a5e94;
-    color: #7cc0ff;
-    border-radius: 999px;
-    padding: 0.08rem 0.6rem;
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-}
-
-/* ---------- Sidebar polish ---------- */
+/* ---------- Sidebar ---------- */
 section[data-testid="stSidebar"] {
-    background: #0a1622;
-    border-right: 1px solid #2a4663;
-}
-section[data-testid="stSidebar"] * {
-    color: #e8f1f9;
-}
-section[data-testid="stSidebar"] hr {
-    border-color: rgba(255, 255, 255, 0.18);
+    background: #0b0e14;
+    border-right: 1px solid #1d222c;
 }
 
 /* ---------- Footer ---------- */
 .pitchiq-footer {
     text-align: center;
-    color: #9fb6c9;
-    font-size: 0.82rem;
-    margin-top: 2.5rem;
-    padding-top: 1rem;
-    border-top: 1px solid #2a4663;
+    color: #5f6774;
+    font-size: 0.8rem;
+    margin-top: 3rem;
+    padding-top: 1.2rem;
+    border-top: 1px solid #1d222c;
 }
 </style>
 """

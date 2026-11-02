@@ -10,7 +10,7 @@ from pitchiq.data.sample_data import DEFAULT_ARSENAL
 
 
 def render_pitcher_profile() -> None:
-    st.markdown("### 🧢 My Arsenal")
+    st.markdown("### My Arsenal")
     st.caption(
         "Tell PitchIQ about yourself. Your profile and arsenal provide the context "
         "the Scout workspace uses to personalize game plans."
@@ -53,7 +53,7 @@ def render_pitcher_profile() -> None:
                 help="Horizontal break — positive = arm side, negative = glove side (RHP view).",
             )
             notes = st.text_input("Notes (movement, feel, when you use it)")
-            submitted = st.form_submit_button("➕ Add pitch", width="stretch")
+            submitted = st.form_submit_button("Add pitch", width="stretch")
 
         if submitted:
             existing = [p["pitch"] for p in st.session_state.arsenal]
@@ -73,7 +73,7 @@ def render_pitcher_profile() -> None:
                 )
                 st.rerun()
 
-        if st.button("⚡ Load example arsenal", width="stretch",
+        if st.button("Load example arsenal", width="stretch",
                      help="Pre-fills a sample four-pitch mix you can edit."):
             _clear_movement_keys()
             st.session_state.arsenal = [dict(p) for p in DEFAULT_ARSENAL]
@@ -96,16 +96,16 @@ def render_pitcher_profile() -> None:
                     )
                     c2.markdown(f"{p['velo_low']}–{p['velo_high']} mph")
                     c3.markdown(f"{p['usage_pct']}% usage")
-                    if c4.button("🗑️", key=f"del_pitch_{i}", help=f"Remove {p['pitch']}"):
+                    if c4.button(":material/delete:", key=f"del_pitch_{i}", help=f"Remove {p['pitch']}"):
                         removed = st.session_state.arsenal.pop(i)
                         _clear_movement_keys(removed["pitch"])
                         st.rerun()
                     if p["notes"]:
                         st.caption(p["notes"])
             if total_usage != 100:
-                st.caption(f"⚠️ Usage adds up to {total_usage}% (aim for 100%).")
+                st.caption(f"Usage adds up to {total_usage}% — aim for 100%.")
             else:
-                st.caption("✅ Usage adds up to 100%.")
+                st.caption("Usage adds up to 100%.")
 
     # --- Pitch movement chart ------------------------------------------------
     _render_movement_section()
@@ -115,22 +115,22 @@ def render_pitcher_profile() -> None:
     c1, c2, c3 = st.columns(3)
     with c1:
         st.text_area(
-            "💪 Strengths", key="strengths", height=130,
+            "Strengths", key="strengths", height=130,
             placeholder="e.g., Sweeper generates whiffs vs. RHH; strong first-pitch strike rate...",
         )
     with c2:
         st.text_area(
-            "🩹 Weaknesses", key="weaknesses", height=130,
+            "Weaknesses", key="weaknesses", height=130,
             placeholder="e.g., Fastball command glove-side; changeup still developing...",
         )
     with c3:
         st.text_area(
-            "🎯 Preferences", key="preferences", height=130,
+            "Preferences", key="preferences", height=130,
             placeholder="e.g., Like to pitch backwards when ahead; prefer ground balls with runners on...",
         )
 
     # --- Save / summary -----------------------------------------------------
-    if st.button("💾 Save profile", type="primary"):
+    if st.button("Save profile", type="primary"):
         if not st.session_state.throwing_hand:
             st.error("Select your throwing hand before saving.")
         elif not st.session_state.arsenal:

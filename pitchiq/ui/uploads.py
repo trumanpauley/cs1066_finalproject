@@ -14,7 +14,7 @@ from pitchiq.services.pdf_service import summarize_upload, validate_upload
 
 
 def render_uploads() -> None:
-    st.markdown("### 📄 Scouting Report Uploads")
+    st.markdown("### Scouting Report Uploads")
     st.caption(
         f"PDFs up to {MAX_UPLOAD_MB} MB. Files are kept for this session only — "
         "V0.3 will extract pitch-level data from them automatically."
@@ -24,8 +24,6 @@ def render_uploads() -> None:
 
     with col_mine:
         _upload_card(
-            accent_class="upload-accent-mine",
-            icon="🧾",
             title="My Pitching Report",
             subtitle="Your own process/pitching report (e.g., a Sockeye or TruMedia export).",
             key="pitcher_report_uploader",
@@ -37,8 +35,6 @@ def render_uploads() -> None:
 
     with col_opp:
         _upload_card(
-            accent_class="upload-accent-opp",
-            icon="🎯",
             title="Opponent Reports",
             subtitle="Opposing team hitting reports — upload one or several.",
             key="opponent_report_uploader",
@@ -50,8 +46,6 @@ def render_uploads() -> None:
 
 
 def _upload_card(
-    accent_class: str,
-    icon: str,
     title: str,
     subtitle: str,
     key: str,
@@ -61,19 +55,8 @@ def _upload_card(
     empty_hint: str,
 ) -> None:
     with st.container(border=True):
-        st.markdown(f'<div class="{accent_class}"></div>', unsafe_allow_html=True)
-        st.markdown(
-            f"""
-            <div class="upload-card-header">
-                <span class="upload-icon">{icon}</span>
-                <span>
-                    <span class="upload-title">{title}</span><br>
-                    <span class="upload-sub">{subtitle}</span>
-                </span>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        st.markdown(f"**{title}**")
+        st.caption(subtitle)
 
         uploaded = st.file_uploader(
             label,
@@ -96,14 +79,14 @@ def _upload_card(
 
         if records:
             st.success(
-                f"✅ {len(records)} file{'s' if len(records) != 1 else ''} "
+                f"{len(records)} file{'s' if len(records) != 1 else ''} "
                 "uploaded successfully."
             )
             for r in records:
                 st.markdown(
                     f"""
                     <div class="file-row">
-                        <span class="file-name">📎 {r["name"]}</span>
+                        <span class="file-name">{r["name"]}</span>
                         <span class="file-size">{r["size_kb"]} KB</span>
                         <span class="file-status">{r["status"]}</span>
                     </div>

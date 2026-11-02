@@ -20,7 +20,7 @@ _THREAT_BADGES = {
 
 
 def render_scouting_report() -> None:
-    st.markdown("### 📊 Example Scouting Report")
+    st.markdown("### Example Scouting Report")
     st.caption(
         "A preview of what PitchIQ will generate. These hitters are fictional — "
         "future versions will build this report from your uploaded opponent PDFs "
@@ -57,13 +57,13 @@ def render_scouting_report() -> None:
     )
 
     # --- Hitter cards ----------------------------------------------------
-    st.markdown("#### 🆚 Opposing Lineup — River City Riverhawks *(fictional)*")
+    st.markdown("#### Opposing Lineup — River City Riverhawks *(fictional)*")
 
     for hitter in report["hitters"]:
         _render_hitter(hitter, mode)
 
     st.caption(
-        "📈 Stat glossary: P = pitches seen · FPSwing% = first-pitch swing rate · "
+        "Stat glossary: P = pitches seen · FPSwing% = first-pitch swing rate · "
         "InZoneWhiff% = whiffs on in-zone pitches · Pre2K/2K-Ch% = chase rate before/with two strikes · "
         "SoftCt% = soft contact · wOBA = weighted on-base average."
     )
