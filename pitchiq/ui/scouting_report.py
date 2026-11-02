@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import streamlit as st
 
+from pitchiq.config import ANALYSIS_MODES
 from pitchiq.services.report_service import generate_scouting_report
 
 _THREAT_BADGES = {
@@ -26,6 +27,15 @@ def render_scouting_report() -> None:
         "and your pitcher profile."
     )
 
+    mode = st.segmented_control(
+        "Report depth",
+        list(ANALYSIS_MODES),
+        default=st.session_state.analysis_mode,
+        key="library_depth",
+        help="Controls how much detail the example report shows.",
+    )
+    if mode:
+        st.session_state.analysis_mode = mode
     mode = st.session_state.analysis_mode
     profile = {
         "pitcher_name": st.session_state.pitcher_name,

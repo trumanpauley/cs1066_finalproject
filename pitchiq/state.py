@@ -18,6 +18,9 @@ _DEFAULTS: dict = {
     "opponent_reports": [],
     # Analysis settings
     "analysis_mode": "Standard",
+    # Scout workspace (chat)
+    "chat_history": [],     # list[dict]: role, content, depth?, context?
+    "pending_prompt": None, # set by quick-prompt buttons
 }
 
 

@@ -178,6 +178,36 @@ CUSTOM_CSS = """
     white-space: nowrap;
 }
 
+/* ---------- Scout workspace context chips ---------- */
+.context-chip {
+    display: inline-block;
+    background: #11314d;
+    border: 1px solid #2a4663;
+    color: #cfe3f5;
+    border-radius: 999px;
+    padding: 0.25rem 0.85rem;
+    margin: 0.15rem 0.35rem 0.15rem 0;
+    font-size: 0.84rem;
+    font-weight: 600;
+}
+.context-chip.warn {
+    background: rgba(255, 190, 70, 0.12);
+    border-color: #9a7a2e;
+    color: #ffcf70;
+}
+.depth-tag {
+    display: inline-block;
+    background: rgba(77, 163, 255, 0.14);
+    border: 1px solid #2a5e94;
+    color: #7cc0ff;
+    border-radius: 999px;
+    padding: 0.08rem 0.6rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
 /* ---------- Sidebar polish ---------- */
 section[data-testid="stSidebar"] {
     background: #0a1622;

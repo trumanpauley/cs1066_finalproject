@@ -10,10 +10,10 @@ from pitchiq.data.sample_data import DEFAULT_ARSENAL
 
 
 def render_pitcher_profile() -> None:
-    st.markdown("### 🧢 Pitcher Profile")
+    st.markdown("### 🧢 My Arsenal")
     st.caption(
-        "Tell PitchIQ about yourself. Future versions will combine this profile "
-        "with opponent data to generate personalized AI scouting reports."
+        "Tell PitchIQ about yourself. Your profile and arsenal provide the context "
+        "the Scout workspace uses to personalize game plans."
     )
 
     # --- Identity -----------------------------------------------------------
