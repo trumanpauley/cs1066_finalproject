@@ -206,3 +206,27 @@ def test_three_real_outings_combine():
     assert c["summary"]["race_to_2k"]["total"] == 19 + 15 + 16
     assert set(c["pitches"]) == {"Fastball (4-Seam)", "Sweeper", "Cutter", "Slider"}
     assert sum(s["usage_pct"] for s in c["pitches"].values()) == pytest.approx(100, abs=0.5)
+
+
+# --- fictional sample files (committed, so these always run) ------------------------------
+
+SAMPLES = Path(__file__).parent.parent / "samples"
+
+
+def test_sample_outings_parse_and_combine():
+    from pitchiq.extraction import extract_report
+    outings = [{**extract_report(p.read_bytes(), p.name), "id": p.stem}
+               for p in sorted(SAMPLES.glob("sample_outing_*.pdf"))]
+    assert len(outings) == 2
+    assert all(o["report_type"] == "pitcher_report" and o["errors"] == [] for o in outings)
+    c = combine_outings(outings)
+    assert set(c["pitches"]) == {"Fastball (4-Seam)", "Sinker (2-Seam)", "ChangeUp", "Curveball"}
+    assert c["summary"]["pitches"] == 90 + 87
+    assert c["pitches"]["ChangeUp"]["whiff_pct"] == pytest.approx(100 * 15 / 27, abs=0.1)
+
+
+def test_sample_notes_pdf_is_not_mistaken_for_a_report():
+    from pitchiq.extraction import extract_report, extract_text
+    data = (SAMPLES / "sample_pitching_notes.pdf").read_bytes()
+    assert extract_report(data, "notes.pdf")["report_type"] == "unknown"
+    assert "circle change" in extract_text(data)

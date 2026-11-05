@@ -12,6 +12,7 @@ import streamlit as st
 from pitchiq.config import APP_ICON, APP_NAME, APP_TAGLINE
 from pitchiq.state import init_state
 from pitchiq.styles import inject_css
+from pitchiq.ui.chat import render_chat
 from pitchiq.ui.pitcher_profile import render_pitcher_profile
 from pitchiq.ui.scout import render_scout
 from pitchiq.ui.team_matchup import render_team_matchup
@@ -25,6 +26,10 @@ def _scout_page() -> None:
 
 def _arsenal_page() -> None:
     render_pitcher_profile()
+
+
+def _chat_page() -> None:
+    render_chat()
 
 
 def _team_page() -> None:
@@ -51,6 +56,8 @@ def main() -> None:
     pages = [
         st.Page(_scout_page, title="Scout", icon=":material/stylus_note:",
                 url_path="scout", default=True),
+        st.Page(_chat_page, title="Ask PitchIQ", icon=":material/forum:",
+                url_path="ask"),
         st.Page(_team_page, title="Team Matchup", icon=":material/stadium:",
                 url_path="team"),
         st.Page(_arsenal_page, title="My Arsenal", icon=":material/sports_baseball:",
@@ -61,7 +68,7 @@ def main() -> None:
 
     st.markdown(
         '<div class="pitchiq-footer">PitchIQ — data from Baseball Savant '
-        "(public Statcast). Game plans are rule-based from the numbers shown.</div>",
+        "(public Statcast). Ask PitchIQ answers come from Claude, grounded in that data.</div>",
         unsafe_allow_html=True,
     )
 

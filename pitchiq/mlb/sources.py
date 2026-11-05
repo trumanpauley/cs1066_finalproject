@@ -28,7 +28,9 @@ def list_teams(season: int) -> list[dict]:
                         headers=HEADERS, timeout=TIMEOUT)
     resp.raise_for_status()
     teams = [
-        {"id": t["id"], "name": t["name"], "abbreviation": t.get("abbreviation", "")}
+        {"id": t["id"], "name": t["name"], "abbreviation": t.get("abbreviation", ""),
+         "nickname": t.get("teamName", ""),        # "Dodgers"
+         "location": t.get("locationName", "")}   # "Los Angeles"
         for t in resp.json()["teams"]
     ]
     return sorted(teams, key=lambda t: t["name"])

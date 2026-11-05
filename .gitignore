@@ -9,3 +9,9 @@ extracted_data/
 
 # Downloaded public data cache (re-downloadable)
 data/
+
+# API keys — never commit
+.streamlit/secrets.toml
+
+# Fictional test files are safe to commit
+!samples/*.pdf

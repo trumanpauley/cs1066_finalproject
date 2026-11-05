@@ -33,6 +33,10 @@ _DEFAULTS: dict = {
     "scout_recent": [],      # recently searched hitter dicts, newest first
     "scout_search": None,    # search box value (cleared after each pick)
     "hitter_profiles": {},   # "id:season:hand" -> computed hitter profile (shared by pages)
+    # Ask PitchIQ (chatbot)
+    "chat_log": [],          # what's shown: role, content, depth, sources, cost
+    "chat_backend": None,    # Claude or Gemini chat backend; holds the API-side conversation
+    "chat_sent_ids": [],     # document/chunk ids already in the conversation
     # Team Matchup
     "team_matchup": None,    # last built team plan: team, season, hand, profiles, failed
 }
