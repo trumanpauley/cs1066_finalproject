@@ -33,6 +33,8 @@ h1, h2, h3, h4 {
     color: #f2f4f8;
     margin: 0 0 0.6rem 0;
 }
+.scout-hero.compact { margin: 0.5rem 0 1.2rem 0; }
+.scout-hero.compact h1 { font-size: 1.6rem; }
 .scout-hero p {
     font-size: 1.05rem;
     color: #8b93a3;

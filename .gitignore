@@ -6,3 +6,6 @@ __pycache__/
 journals/Scouting_Reports/
 *.pdf
 extracted_data/
+
+# Downloaded public data cache (re-downloadable)
+data/

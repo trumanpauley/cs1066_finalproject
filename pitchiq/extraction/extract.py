@@ -62,6 +62,12 @@ def extract_report(pdf_bytes: bytes, filename: str = "") -> dict:
         doc.close()
 
 
+def extract_text(pdf_bytes: bytes) -> str:
+    """Plain text of every page (for notes PDFs that aren't a known report)."""
+    with pymupdf.open(stream=pdf_bytes, filetype="pdf") as doc:
+        return "\n\n".join(page.get_text().strip() for page in doc).strip()
+
+
 def render_page_png(pdf_bytes: bytes, page_number: int, zoom: float = 2.0) -> bytes:
     """Render one PDF page (1-based) to PNG bytes — used to display original
     heatmaps without re-interpreting their values."""

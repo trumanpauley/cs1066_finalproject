@@ -13,6 +13,6 @@ formats plug in by adding a parser module and a detector rule; RAG indexing
 can consume the same structured output.
 """
 
-from pitchiq.extraction.extract import extract_report, render_page_png
+from pitchiq.extraction.extract import extract_report, extract_text, render_page_png
 
-__all__ = ["extract_report", "render_page_png"]
+__all__ = ["extract_report", "extract_text", "render_page_png"]

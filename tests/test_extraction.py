@@ -93,6 +93,35 @@ class TestPitcherReport:
         assert (rows["FF"]["ivb"], rows["FF"]["hb"]) == (17.4, 4.5)
         assert rows["SW"]["spin_eff"] == 38.0
 
+    def test_doc4_splits_release_and_summary(self):
+        r = _load("document (4).pdf")
+        assert (r["race_to_2k"], r["race_to_2k_season"], r["race_to_2k_mlb"]) == ("68% (13/19)", "61%", "64%")
+        assert (r["first_pitch_strikes"], r["first_pitch_strikes_season"],
+                r["first_pitch_strikes_mlb"]) == ("64% (14/22)", "56%", "61%")
+        sw = {p["code"]: p for p in r["pitches"]}["SW"]
+        assert (sw["usage_vl"], sw["usage_p2k_vl"], sw["usage_2k_vl"]) == (36, 43, 20)
+        assert (sw["usage_vr"], sw["usage_p2k_vr"], sw["usage_2k_vr"], sw["in_zone_p2k"]) == (39, 39, 40, 46)
+        # 1'2" release side, 5'6" height, 5'6" extension
+        assert (sw["release_side_in"], sw["release_height_in"], sw["extension_in"]) == (14, 66, 66)
+        # Usage-by-split columns are shares of all pitches, so each sums to ~100%.
+        for col in ("usage_vl", "usage_2k_vl", "usage_vr"):
+            assert 98 <= sum(p[col] for p in r["pitches"]) <= 102
+
+    def test_doc4_page2_results(self):
+        r = _load("document (4).pdf")
+        rows = {p["code"]: p for p in r["pitches"]}
+        assert (rows["SW"]["whiffs"], rows["SW"]["swings"]) == (8, 13)
+        assert (rows["SW"]["strikes"], rows["SW"]["fpk"], rows["SW"]["first_pitches"]) == (21, 7, 7)
+        assert (rows["SL"]["whiffs"], rows["SL"]["swings"], rows["SL"]["strikes"]) == (6, 7, 7)
+        # Strikes are out of the pitch's own usage count.
+        assert all(p["strikes"] <= p["usage_count"] for p in r["pitches"])
+
+    def test_doc5_slider_blank_in_zone_cell(self):
+        # No pre-2K sliders in this report -> the P2K IZ cell is blank (6 cells).
+        sl = {p["code"]: p for p in _load("document (5).pdf")["pitches"]}["SL"]
+        assert (sl["usage_vl"], sl["usage_2k_vl"], sl["usage_2k_vr"]) == (11, 21, 17)
+        assert sl["in_zone_p2k"] is None
+
 
 # ---------------------------------------------------------------------------
 # Opponent statistical reports (TruMedia grid)
