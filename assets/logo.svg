@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="140" height="36" viewBox="0 0 140 36">
+  <circle cx="18" cy="18" r="12" fill="none" stroke="#7aa2f7" stroke-width="2.5"/>
+  <path d="M 11 10 q 5 8 0 16" stroke="#7aa2f7" stroke-width="1.6" fill="none"/>
+  <path d="M 25 10 q -5 8 0 16" stroke="#7aa2f7" stroke-width="1.6" fill="none"/>
+  <text x="38" y="24" font-family="'Segoe UI', 'Helvetica Neue', sans-serif" font-size="17" font-weight="700" fill="#e6e9ef">PitchIQ</text>
+</svg>

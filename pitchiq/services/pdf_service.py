@@ -37,10 +37,25 @@ def summarize_upload(uploaded_file: Any) -> dict:
 
 
 def extract_report_data(uploaded_file: Any) -> dict:
-    """[FUTURE — V0.2] Parse a scouting-report PDF into structured data.
+    """Parse a scouting-report PDF into structured data.
 
-    Will return a dict matching the schema in
-    `pitchiq.data.sample_data.SAMPLE_HITTERS` (opponent reports) or
-    `DEFAULT_ARSENAL` (pitcher process reports).
+    Detects the report format (pitcher process report, opponent statistical
+    report, or opponent heatmap report) and dispatches to the matching parser
+    in `pitchiq.extraction`. Returns a dict with `report_type`, parsed data,
+    and an `errors` list (partial extractions still return data).
     """
-    raise NotImplementedError("PDF extraction ships in a future iteration.")
+    from pitchiq.extraction import extract_report
+
+    return extract_report(uploaded_file.getvalue(), uploaded_file.name)
+
+
+def extraction_summary(result: dict) -> str:
+    """One-line description of an extraction result for upload status rows."""
+    rt = result.get("report_type")
+    if rt == "pitcher_report":
+        return f"Pitcher report · {len(result.get('pitches', []))} pitches"
+    if rt == "opponent_stats":
+        return f"Stats report · {len(result.get('hitters', []))} hitters"
+    if rt == "opponent_heatmap":
+        return f"Heatmap report · {len(result.get('entries', []))} pages"
+    return "Unrecognized format"

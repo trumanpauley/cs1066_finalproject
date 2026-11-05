@@ -5,15 +5,20 @@ Run with:  streamlit run app.py
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import streamlit as st
 
 from pitchiq.config import APP_ICON, APP_NAME, APP_TAGLINE
 from pitchiq.state import init_state
 from pitchiq.styles import inject_css
+from pitchiq.ui.extracted import render_extracted_data
 from pitchiq.ui.pitcher_profile import render_pitcher_profile
 from pitchiq.ui.scout import render_scout
 from pitchiq.ui.scouting_report import render_scouting_report
 from pitchiq.ui.uploads import render_uploads
+
+_LOGO_PATH = Path(__file__).parent / "assets" / "logo.svg"
 
 
 def _scout_page() -> None:
@@ -27,6 +32,8 @@ def _arsenal_page() -> None:
 def _library_page() -> None:
     render_uploads()
     st.divider()
+    render_extracted_data()
+    st.divider()
     render_scouting_report()
 
 
@@ -39,6 +46,8 @@ def main() -> None:
     )
     init_state()
     inject_css()
+    if _LOGO_PATH.exists():
+        st.logo(str(_LOGO_PATH), size="large")
 
     pages = [
         st.Page(_scout_page, title="Scout", icon=":material/stylus_note:",

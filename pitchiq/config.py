@@ -3,7 +3,7 @@
 APP_NAME = "PitchIQ"
 APP_TAGLINE = "AI-Powered Baseball Scouting Reports"
 APP_ICON = "⚾"
-VERSION = "0.4.0"
+VERSION = "0.5.0"
 
 # Pitch types a pitcher can add to their arsenal (TruMedia-style taxonomy).
 PITCH_TYPES = [

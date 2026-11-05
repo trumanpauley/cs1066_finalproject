@@ -31,6 +31,7 @@ def render_pitcher_profile() -> None:
 
     # --- Pitch arsenal ------------------------------------------------------
     st.markdown("#### Build Your Arsenal")
+    _render_apply_extracted()
     arsenal_col, add_col = st.columns([3, 2])
 
     with add_col:
@@ -147,6 +148,61 @@ def render_pitcher_profile() -> None:
             f"{name} — {st.session_state.throwing_hand}, {n_pitches}-pitch mix. "
             f"This profile will drive AI report personalization in future versions.</div>",
             unsafe_allow_html=True,
+        )
+
+
+# ---------------------------------------------------------------------------
+# Apply an extracted pitcher report to the arsenal
+# ---------------------------------------------------------------------------
+
+def _render_apply_extracted() -> None:
+    reports = {
+        key: result
+        for key, result in st.session_state.extraction_cache.items()
+        if result.get("report_type") == "pitcher_report" and result.get("pitches")
+    }
+    if not reports:
+        return
+
+    with st.container(border=True):
+        st.markdown("**Import from an uploaded pitching report**")
+        labels = {
+            f"{r['filename']} — {r.get('pitcher_name') or 'Unknown'} "
+            f"({r.get('date_range') or 'no date'})": key
+            for key, r in reports.items()
+        }
+        col_sel, col_btn = st.columns([3, 1], vertical_alignment="bottom")
+        with col_sel:
+            choice = st.selectbox(
+                "Extracted report", list(labels), key="apply_report_choice"
+            )
+        with col_btn:
+            apply = st.button("Apply to arsenal", width="stretch")
+
+        result = reports[labels[choice]]
+        if apply:
+            _clear_movement_keys()
+            st.session_state.arsenal = [
+                {
+                    "pitch": p.get("name") or p.get("code", "Unknown"),
+                    "velo_low": int(p.get("velo_low") or 0),
+                    "velo_high": int(p.get("velo_high") or 0),
+                    "usage_pct": int(p.get("usage_pct") or 0),
+                    "ivb": float(p["ivb"]) if p.get("ivb") is not None else 0.0,
+                    "hb": float(p["hb"]) if p.get("hb") is not None else 0.0,
+                    "notes": (
+                        f"From {result['filename']}"
+                        + (f" ({result['date_range']})" if result.get("date_range") else "")
+                        + (f"; avg {p['velo_avg']} mph" if p.get("velo_avg") else "")
+                    ),
+                }
+                for p in result["pitches"]
+            ]
+            st.rerun()
+        st.caption(
+            "Replaces the arsenal below with the extracted pitches — everything "
+            "stays editable. Review or correct the raw extraction in the "
+            "Scouting Library."
         )
 
 

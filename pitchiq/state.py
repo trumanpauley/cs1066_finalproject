@@ -16,6 +16,9 @@ _DEFAULTS: dict = {
     # Uploads (metadata only in V0.1; bytes kept for future extraction)
     "pitcher_reports": [],  # list[dict]: name, size_kb, status
     "opponent_reports": [],
+    # PDF extraction (V0.5)
+    "extraction_cache": {},  # cache_key -> extraction result dict (editable)
+    "pdf_store": {},         # cache_key -> raw PDF bytes (heatmap rendering)
     # Analysis settings
     "analysis_mode": "Standard",
     # Scout workspace (chat)

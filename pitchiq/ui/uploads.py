@@ -1,8 +1,9 @@
 """Upload sections: pitcher's own report + opponent scouting reports.
 
-V0.2: two distinct upload cards with per-file rows (name, size, status).
-Functionality is unchanged — files are validated and their metadata stored
-in session state for future PDF extraction.
+Uploads are validated, parsed by `pitchiq.extraction` (results cached in
+session state by name+size), and summarized with per-file status rows.
+Raw bytes are retained only for heatmap reports, which are displayed as
+rendered images of the original pages.
 """
 
 from __future__ import annotations
@@ -10,7 +11,12 @@ from __future__ import annotations
 import streamlit as st
 
 from pitchiq.config import ACCEPTED_UPLOAD_TYPES, MAX_UPLOAD_MB
-from pitchiq.services.pdf_service import summarize_upload, validate_upload
+from pitchiq.services.pdf_service import (
+    extract_report_data,
+    extraction_summary,
+    summarize_upload,
+    validate_upload,
+)
 
 
 def render_uploads() -> None:
@@ -72,7 +78,11 @@ def _upload_card(
         for f in files:
             ok, message = validate_upload(f)
             if ok:
-                records.append(summarize_upload(f))
+                record = summarize_upload(f)
+                record["cache_key"] = _ensure_extracted(f)
+                result = st.session_state.extraction_cache[record["cache_key"]]
+                record["status"] = extraction_summary(result)
+                records.append(record)
             else:
                 st.error(f"**{f.name}** — {message}")
         st.session_state[state_key] = records
@@ -95,3 +105,15 @@ def _upload_card(
                 )
         else:
             st.info(empty_hint)
+
+
+def _ensure_extracted(uploaded_file) -> str:
+    """Parse the file once per session (cached by name + size)."""
+    cache_key = f"{uploaded_file.name}:{uploaded_file.size}"
+    if cache_key not in st.session_state.extraction_cache:
+        result = extract_report_data(uploaded_file)
+        st.session_state.extraction_cache[cache_key] = result
+        # Keep raw bytes only when needed to render original heatmap pages.
+        if result.get("report_type") == "opponent_heatmap":
+            st.session_state.pdf_store[cache_key] = uploaded_file.getvalue()
+    return cache_key
