@@ -11,9 +11,8 @@ const MPH_TO_FPS = 1.4667;
 export const SLOW_MO = 2.3; // stretch real flight time so the eye can follow it
 const WINDUP_MS = 260;
 const AFTER_MS = 900;
-/** The flight is shown from this fraction on: the camera sits just behind
- *  the release point, so the first few feet would be off-screen. */
-const VISIBLE_FROM = 0.15;
+/** The flight is drawn from just out of the hand. */
+const VISIBLE_FROM = 0.03;
 /**
  * Spin force is roughly constant through the flight, so movement away from
  * the no-spin path grows with t². (An earlier version used a higher power to

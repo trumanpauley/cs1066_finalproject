@@ -267,11 +267,9 @@ function TrailView({ trail, latest }: { trail: PitchTrail; latest: boolean }) {
   const dx = end.sx - ghostEnd.sx;
   const dy = end.sy - ghostEnd.sy;
   const len = Math.hypot(dx, dy);
-  // Arrowhead at the actual location, pointing along the break.
+  // Label beside the arrow's midpoint (offset perpendicular to it).
   const ux = len ? dx / len : 0;
   const uy = len ? dy / len : 0;
-  const head = `${end.sx},${end.sy} ${end.sx - ux * 7 - uy * 4},${end.sy - uy * 7 + ux * 4} ${end.sx - ux * 7 + uy * 4},${end.sy - uy * 7 - ux * 4}`;
-  // Label beside the arrow's midpoint (offset perpendicular to it).
   const labelX = ghostEnd.sx + dx / 2 - uy * 22;
   const labelY = ghostEnd.sy + dy / 2 + ux * 22;
 
@@ -296,15 +294,12 @@ function TrailView({ trail, latest }: { trail: PitchTrail; latest: boolean }) {
             opacity={0.35}
           />
           <circle cx={ghostEnd.sx} cy={ghostEnd.sy} r={5} fill="none" stroke="#ffffff" strokeDasharray="2.5 2" opacity={0.7} />
-          <line
-            x1={ghostEnd.sx}
-            y1={ghostEnd.sy}
-            x2={end.sx - ux * 6}
-            y2={end.sy - uy * 6}
-            stroke={trail.color}
-            strokeWidth={2}
-          />
-          <polygon points={head} fill={trail.color} />
+          {/* Break: dotted black line from the no-spin spot to the actual pitch.
+              A faint light band underneath keeps it readable on the dark scene. */}
+          <line x1={ghostEnd.sx} y1={ghostEnd.sy} x2={end.sx} y2={end.sy}
+            stroke="#ffffff" strokeOpacity={0.35} strokeWidth={4} strokeLinecap="round" />
+          <line x1={ghostEnd.sx} y1={ghostEnd.sy} x2={end.sx} y2={end.sy}
+            stroke="#000000" strokeWidth={2} strokeDasharray="0.1 4" strokeLinecap="round" />
           <g transform={`translate(${labelX},${labelY})`}>
             <rect x={-18} y={-9} width={36} height={16} rx={8} fill="#0e1117" opacity={0.85} />
             <text textAnchor="middle" y={3} fontSize={10} fontWeight={700} fill={trail.color}>

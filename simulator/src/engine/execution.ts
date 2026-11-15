@@ -2,6 +2,7 @@
 
 import type { Rng } from "./rng";
 import type { HitterProfile, Location, PitchDefinition, PitchExecution } from "./types";
+import { isInZone } from "./zone";
 
 /** Extension (feet) at which perceived velocity equals radar velocity. */
 export const REFERENCE_EXTENSION = 6.0;
@@ -15,7 +16,6 @@ const RUBBER_TO_PLATE = 60.5;
 export function perceivedVelocity(velocity: number, extension: number): number {
   return (velocity * (RUBBER_TO_PLATE - REFERENCE_EXTENSION)) / (RUBBER_TO_PLATE - extension);
 }
-import { isInZone } from "./zone";
 
 /**
  * Sample the actual location around the target using the pitch's command

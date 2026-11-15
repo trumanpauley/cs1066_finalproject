@@ -11,6 +11,7 @@ import {
 import { loadSimulatorData } from "./data/loaders";
 import { flightPaths, frameAt, makeAnimation, releaseOf, type Frame, type PitchAnimation } from "./ui/animation";
 import { pitchColor, totalBreak } from "./ui/pitchStyle";
+import { setCameraHeight } from "./ui/projection";
 import { BoxScore, PitchMenu, ResultBanner, Scoreboard, type BoxEntry } from "./ui/Hud";
 import { Scene, type PitchMarker, type PitchTrail } from "./ui/Scene";
 
@@ -30,7 +31,11 @@ function initialSeed(): number {
 type Phase = "aiming" | "pitching" | "done";
 
 export default function App() {
-  const data = useMemo(loadSimulatorData, []);
+  const data = useMemo(() => {
+    const d = loadSimulatorData();
+    setCameraHeight(d.pitcher.release.z); // before the first render
+    return d;
+  }, []);
   const rng = useMemo(() => createRng(initialSeed()), []);
   const { pitcher } = data;
 
