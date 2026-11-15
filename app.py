@@ -15,6 +15,7 @@ from pitchiq.styles import inject_css
 from pitchiq.ui.chat import render_chat
 from pitchiq.ui.pitcher_profile import render_pitcher_profile
 from pitchiq.ui.scout import render_scout
+from pitchiq.ui.simulator import render_simulator
 from pitchiq.ui.team_matchup import render_team_matchup
 
 _LOGO_PATH = Path(__file__).parent / "assets" / "logo.svg"
@@ -34,6 +35,10 @@ def _chat_page() -> None:
 
 def _team_page() -> None:
     render_team_matchup()
+
+
+def _simulate_page() -> None:
+    render_simulator()
 
 
 # The Scouting Library (PDF uploads + extraction: pitchiq/ui/uploads.py,
@@ -60,6 +65,8 @@ def main() -> None:
                 url_path="ask"),
         st.Page(_team_page, title="Team Matchup", icon=":material/stadium:",
                 url_path="team"),
+        st.Page(_simulate_page, title="Simulate", icon=":material/sports_esports:",
+                url_path="simulate"),
         st.Page(_arsenal_page, title="My Arsenal", icon=":material/sports_baseball:",
                 url_path="arsenal"),
     ]

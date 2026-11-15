@@ -1,0 +1,48 @@
+{
+  "id": "demo-rhp",
+  "name": "Demo RHP",
+  "hand": "R",
+  "release": { "x": -1.8, "z": 5.9, "extension": 6.3 },
+  "source": {
+    "kind": "synthetic",
+    "label": "Sample pitcher profile — edit to match your arsenal"
+  },
+  "pitches": [
+    {
+      "code": "FF",
+      "name": "Four-Seam Fastball",
+      "category": "fastball",
+      "velocity": 94,
+      "velocitySd": 0.8,
+      "horizontalBreak": 8,
+      "inducedVerticalBreak": 17,
+      "spinRate": 2350,
+      "usage": 0.5,
+      "command": { "sdX": 0.3, "sdZ": 0.3 }
+    },
+    {
+      "code": "SL",
+      "name": "Slider",
+      "category": "breaking",
+      "velocity": 86,
+      "velocitySd": 0.9,
+      "horizontalBreak": -5,
+      "inducedVerticalBreak": 1,
+      "spinRate": 2550,
+      "usage": 0.3,
+      "command": { "sdX": 0.38, "sdZ": 0.36 }
+    },
+    {
+      "code": "CH",
+      "name": "Changeup",
+      "category": "offspeed",
+      "velocity": 86,
+      "velocitySd": 1.0,
+      "horizontalBreak": 14,
+      "inducedVerticalBreak": 8,
+      "spinRate": 1750,
+      "usage": 0.2,
+      "command": { "sdX": 0.36, "sdZ": 0.38 }
+    }
+  ]
+}

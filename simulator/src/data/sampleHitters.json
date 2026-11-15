@@ -1,0 +1,112 @@
+[
+  {
+    "id": "demo-rhh-power",
+    "name": "Demo Slugger",
+    "bats": "R",
+    "blurb": "Aggressive right-handed power bat. Hunts fastballs, expands on spin.",
+    "zone": {
+      "bottom": 1.6,
+      "top": 3.45
+    },
+    "rates": {
+      "zoneSwing": 0.7,
+      "chase": 0.32,
+      "zoneContact": 0.8,
+      "outZoneContact": 0.52,
+      "foulShare": 0.48
+    },
+    "byPitchType": {
+      "fastball": {
+        "zoneSwingMult": 1.08,
+        "chaseMult": 0.85,
+        "contactMult": 1.04,
+        "damageMult": 1.06
+      },
+      "breaking": {
+        "zoneSwingMult": 0.92,
+        "chaseMult": 1.3,
+        "contactMult": 0.84,
+        "damageMult": 0.9
+      },
+      "offspeed": {
+        "zoneSwingMult": 0.95,
+        "chaseMult": 1.1,
+        "contactMult": 0.92,
+        "damageMult": 0.94
+      }
+    },
+    "counts": {
+      "firstPitchSwingMult": 1.1,
+      "hitterAheadSwingMult": 1.05,
+      "threeBallsNoStrikesSwingMult": 0.3,
+      "twoStrikeSwingMult": 1.3
+    },
+    "battedBall": {
+      "exitVeloMean": 91,
+      "exitVeloSd": 13,
+      "launchAngleMean": 15,
+      "launchAngleSd": 24,
+      "pullBias": 12,
+      "spraySd": 22
+    },
+    "source": {
+      "kind": "synthetic",
+      "label": "Synthetic demo profile \u2014 not real MLB data"
+    }
+  },
+  {
+    "id": "demo-lhh-contact",
+    "name": "Demo Table-Setter",
+    "bats": "L",
+    "blurb": "Patient left-handed contact hitter. Rarely chases, sprays the ball.",
+    "zone": {
+      "bottom": 1.5,
+      "top": 3.3
+    },
+    "rates": {
+      "zoneSwing": 0.66,
+      "chase": 0.24,
+      "zoneContact": 0.89,
+      "outZoneContact": 0.66,
+      "foulShare": 0.45
+    },
+    "byPitchType": {
+      "fastball": {
+        "zoneSwingMult": 1.0,
+        "chaseMult": 0.9,
+        "contactMult": 1.03,
+        "damageMult": 0.98
+      },
+      "breaking": {
+        "zoneSwingMult": 0.95,
+        "chaseMult": 1.1,
+        "contactMult": 0.92,
+        "damageMult": 0.9
+      },
+      "offspeed": {
+        "zoneSwingMult": 0.98,
+        "chaseMult": 1.15,
+        "contactMult": 0.9,
+        "damageMult": 0.92
+      }
+    },
+    "counts": {
+      "firstPitchSwingMult": 0.8,
+      "hitterAheadSwingMult": 0.95,
+      "threeBallsNoStrikesSwingMult": 0.15,
+      "twoStrikeSwingMult": 1.35
+    },
+    "battedBall": {
+      "exitVeloMean": 87,
+      "exitVeloSd": 12,
+      "launchAngleMean": 11,
+      "launchAngleSd": 22,
+      "pullBias": 2,
+      "spraySd": 26
+    },
+    "source": {
+      "kind": "synthetic",
+      "label": "Synthetic demo profile \u2014 not real MLB data"
+    }
+  }
+]

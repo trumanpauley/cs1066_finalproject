@@ -18,6 +18,8 @@ iterations — the code is structured so they plug in without a rewrite.
   and PDF attachments live right in the composer. Each response reserves
   space for future heatmaps, statistics, and evidence.
 - **My Arsenal** — pitcher profile, pitch arsenal editor, and movement chart
+- **Pitch Simulator** — pitch against a hitter from the mound: pick a pitch,
+  aim, throw, and see a probability-driven result (see below)
 - **Scouting Library** — report uploads and the example scouting report
 
 ## Features
@@ -43,6 +45,51 @@ iterations — the code is structured so they plug in without a rewrite.
   opponent scouting reports, with filename/size/status feedback
 - **Example Scouting Report** — fictional opposing lineup with per-hitter stat
   tables (TruMedia-style schema) and pitching recommendations
+
+## Pitch Simulator (Phase 1)
+
+An interactive at-bat from the pitcher's point of view. Choose a pitch
+(four-seam, slider, changeup), click anywhere on the 5×5 target grid (inner
+3×3 = strike zone, outer ring = chase area), and throw. The pitch flies with
+its own movement, the hitter reacts, and the count updates until a strikeout,
+walk, HBP, or ball in play. **Why?** shows the model's actual probabilities.
+
+Keys: `1`–`3` pick a pitch, `Space` throws (or faces the hitter again).
+
+**The hitters are synthetic demo profiles, not real MLB data**, and are
+labeled that way in the UI.
+
+How a pitch is simulated (`simulator/src/engine/`, pure TypeScript):
+
+| Step | Module | What it does |
+|------|--------|--------------|
+| A | `execution.ts` | Target ≠ actual: location scatters around the aim point by the pitch's command (SD in feet) |
+| B | `swing.ts` | P(swing) blends chase and zone-swing rates by depth in the zone, then pitch-type, platoon, and count adjustments |
+| C | `contact.ts` | Given a swing: P(whiff), P(foul), P(in play) — always sums to 1 |
+| D | `battedBall.ts` | Exit velocity, launch angle, spray angle → distance → a hit *probability*, then a sampled result |
+| — | `atBat.ts` | Count state machine: fouls with two strikes, walks, strikeouts, HBP |
+
+Randomness comes from a seedable RNG (`rng.ts`), so tests are reproducible;
+open the dev server with `?seed=123` to replay a sequence. Hitter and pitcher
+data load through `simulator/src/data/loaders.ts`, which validates profiles
+and can accept data injected by the app (`window.PITCHIQ_DATA`) — the plug-in
+point for scouting-report or API data in later phases.
+
+The simulator is a Vite + React + TypeScript app compiled to one HTML file,
+`pitchiq/static/simulator.html`, which is committed so the Streamlit app runs
+without Node. To work on it (Node 20+):
+
+```bash
+cd simulator
+npm install
+npm run dev      # standalone at http://localhost:5173
+npm test         # engine tests (Vitest)
+npm run build    # rebuilds pitchiq/static/simulator.html
+```
+
+Roadmap: Phase 2 adds hitter heatmaps, richer command profiles, and batted-ball
+visualization; Phase 3 connects real scouting reports, saves practice
+sessions, and compares strategies.
 
 ## Quick Start
 
@@ -76,12 +123,19 @@ pitchiq/
 ├── services/
 │   ├── pdf_service.py        # Upload validation + extraction entry point
 │   └── report_service.py     # Report + answer assembly; future: RAG + LLM
+├── static/
+│   └── simulator.html        # Built Pitch Simulator (from simulator/)
 └── ui/
     ├── scout.py              # Chat homepage (composer, messages, evidence)
     ├── pitcher_profile.py    # Arsenal editor, movement chart, report import
     ├── uploads.py            # Dual PDF upload cards + extraction status
     ├── extracted.py          # Extraction review/correction UI
-    └── scouting_report.py    # Hitter cards, stat tables, recommendations
+    ├── scouting_report.py    # Hitter cards, stat tables, recommendations
+    └── simulator.py          # Embeds the built Pitch Simulator
+simulator/                    # Pitch Simulator source (Vite + React + TS)
+├── src/engine/               # Simulation engine + Vitest tests (no UI code)
+├── src/data/                 # Sample pitcher/hitters (synthetic) + loaders
+└── src/ui/                   # SVG scene, animation, HUD
 tests/
 └── test_extraction.py        # Extraction vs. original-PDF value tests
 ```
