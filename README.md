@@ -13,14 +13,15 @@ iterations — the code is structured so they plug in without a rewrite.
 
 ## Pages
 
-- **Scout** (homepage) — centered chat prompt; ask about any hitter with no
-  profile or uploads required. Analysis depth (Quick / Standard / Detailed)
-  and PDF attachments live right in the composer. Each response reserves
-  space for future heatmaps, statistics, and evidence.
-- **My Arsenal** — pitcher profile, pitch arsenal editor, and movement chart
-- **Pitch Simulator** — pitch against a hitter from the mound: pick a pitch,
-  aim, throw, and see a probability-driven result (see below)
-- **Scouting Library** — report uploads and the example scouting report
+- **Scout** (homepage) — search any MLB hitter and get his Baseball Savant
+  tendencies plus a plan built around your arsenal
+- **Ask PitchIQ** — the scouting chatbot (retrieval over Savant data + an LLM)
+- **Team Matchup** — pick an MLB team and get a plan for every hitter on the
+  active roster, most dangerous first
+- **Simulate** — face a team's lineup batter by batter in the Pitch Simulator,
+  with each hitter driven by his own Savant data (see below)
+- **My Arsenal** — pitcher profile, report uploads, pitch arsenal, and
+  movement chart
 
 ## Features
 
@@ -46,7 +47,17 @@ iterations — the code is structured so they plug in without a rewrite.
 - **Example Scouting Report** — fictional opposing lineup with per-hitter stat
   tables (TruMedia-style schema) and pitching recommendations
 
-## Pitch Simulator (Phase 1)
+## Simulate (Pitch Simulator)
+
+Pick an opponent on **Simulate**, choose the hitters in batting order, and
+click **Load lineup**. Each hitter's rates come from his own Baseball Savant
+pitches against your throwing hand (`pitchiq/mlb/sim_profile.py`): zone swing,
+chase, zone/out-of-zone contact, and foul rates; per-pitch-family
+multipliers (fastball / breaking / offspeed); count tendencies; and exit
+velocity, launch angle, and spray direction. Small samples are shrunk toward
+league-wide priors. Your pitches come from **My Arsenal** (a sample RHP is
+used until you add some). After each plate appearance, **Next batter**
+brings up the next hitter; outs carry over and three outs retire the side.
 
 An interactive at-bat from the pitcher's point of view. Choose a pitch
 (four-seam, slider, changeup), click anywhere on the 5×5 target grid (inner
@@ -56,8 +67,9 @@ walk, HBP, or ball in play. **Why?** shows the model's actual probabilities.
 
 Keys: `1`–`3` pick a pitch, `Space` throws (or faces the hitter again).
 
-**The hitters are synthetic demo profiles, not real MLB data**, and are
-labeled that way in the UI.
+With no lineup loaded, the simulator falls back to two **synthetic demo
+hitters** (not real MLB data), labeled "Demo data" in the UI; Savant-driven
+hitters are labeled "Savant".
 
 How a pitch is simulated (`simulator/src/engine/`, pure TypeScript):
 

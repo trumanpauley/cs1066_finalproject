@@ -1,4 +1,4 @@
-import type { AtBatState, HitterProfile, PitchDefinition, PitchOutcome } from "../engine";
+import type { AtBatState, DataSource, HitterProfile, PitchDefinition, PitchOutcome, PlateAppearanceResult } from "../engine";
 import { CALL_COLORS } from "./Scene";
 
 function Dots({ label, n, max, color }: { label: string; n: number; max: number; color: string }) {
@@ -12,33 +12,46 @@ function Dots({ label, n, max, color }: { label: string; n: number; max: number;
   );
 }
 
+const SOURCE_CHIP: Record<DataSource["kind"], string> = {
+  synthetic: "Demo data",
+  profile: "Profile",
+  scouting_report: "Report",
+  api: "Savant",
+};
+
 interface ScoreboardProps {
   hitters: HitterProfile[];
   hitter: HitterProfile;
+  team?: string;
   state: AtBatState;
   onHitter: (id: string) => void;
   onReset: () => void;
   locked: boolean;
 }
 
-export function Scoreboard({ hitters, hitter, state, onHitter, onReset, locked }: ScoreboardProps) {
+export function Scoreboard({ hitters, hitter, team, state, onHitter, onReset, locked }: ScoreboardProps) {
   return (
     <header className="scoreboard">
       <div className="sb-hitter">
+        {team && <span className="sb-team">{team}</span>}
         <select
           value={hitter.id}
           onChange={(e) => onHitter(e.target.value)}
           disabled={locked}
           aria-label="Choose a hitter"
         >
-          {hitters.map((h) => (
+          {hitters.map((h, i) => (
             <option key={h.id} value={h.id}>
+              {team ? `${i + 1}. ` : ""}
               {h.name} ({h.bats}HH)
             </option>
           ))}
         </select>
-        <span className={`chip ${hitter.source.kind === "synthetic" ? "chip-demo" : ""}`} title={hitter.source.label}>
-          {hitter.source.kind === "synthetic" ? "Demo data" : "Report"}
+        <span
+          className={`chip ${hitter.source.kind === "synthetic" ? "chip-demo" : "chip-real"}`}
+          title={hitter.source.label}
+        >
+          {SOURCE_CHIP[hitter.source.kind]}
         </span>
       </div>
       <div className="sb-count">
@@ -93,11 +106,12 @@ export function PitchMenu({ pitches, selected, onSelect, onThrow, canThrow, hasT
 
 interface ResultProps {
   outcome: PitchOutcome | null;
+  sourceLabel: string;
   showWhy: boolean;
   onToggleWhy: () => void;
 }
 
-export function ResultBanner({ outcome, showWhy, onToggleWhy }: ResultProps) {
+export function ResultBanner({ outcome, sourceLabel, showWhy, onToggleWhy }: ResultProps) {
   if (!outcome) return null;
   const color = CALL_COLORS[outcome.call];
   const bb = outcome.battedBall;
@@ -135,7 +149,7 @@ export function ResultBanner({ outcome, showWhy, onToggleWhy }: ResultProps) {
               <li key={i}>{e}</li>
             ))}
           </ul>
-          <p className="fine">Model inputs come from the hitter's synthetic demo profile — not real MLB data.</p>
+          <p className="fine">Hitter model inputs: {sourceLabel}.</p>
         </div>
       )}
     </div>
@@ -150,6 +164,31 @@ function ProbBar({ label, p, hit }: { label: string; p: number; hit: boolean }) 
         <span className="prob-fill" style={{ width: `${Math.round(p * 100)}%` }} />
       </span>
       <span className="prob-val">{Math.round(p * 100)}%</span>
+    </div>
+  );
+}
+
+const SHORT: Record<PlateAppearanceResult, string> = {
+  strikeout: "K", walk: "BB", hit_by_pitch: "HBP", single: "1B", double: "2B", triple: "3B",
+  home_run: "HR", groundout: "GO", lineout: "LO", flyout: "FO", popout: "PO",
+};
+
+export interface BoxEntry {
+  hitter: string;
+  result: PlateAppearanceResult;
+  pitches: number;
+}
+
+/** Results of every plate appearance so far, e.g. "Turang K · Chourio 1B". */
+export function BoxScore({ entries, isOut }: { entries: BoxEntry[]; isOut: (r: PlateAppearanceResult) => boolean }) {
+  if (!entries.length) return null;
+  return (
+    <div className="box" aria-label="Plate appearance results">
+      {entries.map((e, i) => (
+        <span key={i} className={`box-pa ${isOut(e.result) ? "box-out" : "box-safe"}`} title={`${e.pitches} pitches`}>
+          {e.hitter.split(" ").slice(-1)[0]} <b>{SHORT[e.result]}</b>
+        </span>
+      ))}
     </div>
   );
 }

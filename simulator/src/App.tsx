@@ -10,7 +10,7 @@ import {
 } from "./engine";
 import { loadSimulatorData } from "./data/loaders";
 import { frameAt, makeAnimation, type Frame, type PitchAnimation } from "./ui/animation";
-import { PitchMenu, ResultBanner, Scoreboard } from "./ui/Hud";
+import { BoxScore, PitchMenu, ResultBanner, Scoreboard, type BoxEntry } from "./ui/Hud";
 import { Scene, type PitchMarker } from "./ui/Scene";
 
 declare global {
@@ -33,8 +33,11 @@ export default function App() {
   const rng = useMemo(() => createRng(initialSeed()), []);
   const { pitcher } = data;
 
-  const [hitterId, setHitterId] = useState(data.hitters[0].id);
-  const hitter = data.hitters.find((h) => h.id === hitterId) ?? data.hitters[0];
+  const lineup = data.hitters;
+  const [batterIndex, setBatterIndex] = useState(0);
+  const hitter = lineup[batterIndex] ?? lineup[0];
+  const nextHitter = lineup[(batterIndex + 1) % lineup.length];
+  const [box, setBox] = useState<BoxEntry[]>([]);
   const [atBat, setAtBat] = useState<AtBatState>(() => newAtBat());
   const [pitchCode, setPitchCode] = useState(pitcher.pitches[0].code);
   const [target, setTarget] = useState<Location | null>(null);
@@ -42,7 +45,7 @@ export default function App() {
   const [last, setLast] = useState<PitchOutcome | null>(null);
   const [showWhy, setShowWhy] = useState(false);
   const [frame, setFrame] = useState<Frame | null>(null);
-  const pending = useRef<{ anim: PitchAnimation; next: AtBatState } | null>(null);
+  const pending = useRef<{ anim: PitchAnimation & { hitterName: string }; next: AtBatState } | null>(null);
 
   // --- animation loop -------------------------------------------------------
   useEffect(() => {
@@ -55,6 +58,10 @@ export default function App() {
       setFrame(f);
       if (f.done) {
         setAtBat(next);
+        if (next.result) {
+          const result = next.result;
+          setBox((b) => [...b, { hitter: anim.hitterName, result, pitches: next.pitches.length }]);
+        }
         setLast(anim.outcome);
         setPhase(next.result ? "done" : "aiming");
         return;
@@ -68,20 +75,27 @@ export default function App() {
   const throwIt = useCallback(() => {
     if (phase !== "aiming" || !target) return;
     const { state, outcome } = throwPitch(atBat, { pitchCode, target }, pitcher, hitter, rng);
-    pending.current = { anim: makeAnimation(outcome, pitcher, rng.next()), next: state };
+    pending.current = { anim: { ...makeAnimation(outcome, pitcher, rng.next()), hitterName: hitter.name }, next: state };
     setLast(null);
     setPhase("pitching");
   }, [phase, target, atBat, pitchCode, pitcher, hitter, rng]);
 
+  /** Start a plate appearance; three outs retire the side and clear the box. */
   const startAtBat = useCallback(
-    (keepOuts: boolean) => {
-      // Three outs retires the side: the next plate appearance starts fresh.
-      setAtBat(newAtBat(keepOuts && atBat.outs < 3 ? atBat.outs : 0));
+    (index: number, keepOuts: boolean) => {
+      const sideRetired = atBat.outs >= 3;
+      setBatterIndex(index);
+      setAtBat(newAtBat(keepOuts && !sideRetired ? atBat.outs : 0));
+      if (!keepOuts || sideRetired) setBox([]);
       setLast(null);
       setFrame(null);
       setPhase("aiming");
     },
     [atBat.outs],
+  );
+  const nextBatter = useCallback(
+    () => startAtBat((batterIndex + 1) % lineup.length, true),
+    [startAtBat, batterIndex, lineup.length],
   );
 
   // --- keyboard: 1-9 pick a pitch, Space/Enter throws ----------------------
@@ -92,13 +106,13 @@ export default function App() {
       if (n >= 1 && n <= pitcher.pitches.length) setPitchCode(pitcher.pitches[n - 1].code);
       if (e.key === " " || e.key === "Enter") {
         e.preventDefault();
-        if (phase === "done") startAtBat(true);
+        if (phase === "done") nextBatter();
         else throwIt();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [pitcher, phase, throwIt, startAtBat]);
+  }, [pitcher, phase, throwIt, nextBatter]);
 
   const markers: PitchMarker[] = atBat.pitches.map((p, i) => ({
     n: i + 1,
@@ -108,23 +122,20 @@ export default function App() {
 
   const result = atBat.result;
   const isOut = result ? OUT_RESULTS.includes(result) : false;
+  const sideRetired = atBat.outs >= 3;
 
   return (
     <div className="app">
       <Scoreboard
-        hitters={data.hitters}
+        hitters={lineup}
         hitter={hitter}
+        team={data.team}
         state={atBat}
         locked={phase === "pitching"}
-        onHitter={(id) => {
-          setHitterId(id);
-          setAtBat(newAtBat(atBat.outs < 3 ? atBat.outs : 0));
-          setLast(null);
-          setFrame(null);
-          setPhase("aiming");
-        }}
-        onReset={() => startAtBat(false)}
+        onHitter={(id) => startAtBat(Math.max(0, lineup.findIndex((h) => h.id === id)), true)}
+        onReset={() => startAtBat(batterIndex, false)}
       />
+      <BoxScore entries={box} isOut={(r) => OUT_RESULTS.includes(r)} />
 
       <div className="stage">
         <Scene
@@ -141,25 +152,37 @@ export default function App() {
         {phase === "done" && result && last && (
           <div className="overlay">
             <div className={`final ${isOut ? "final-out" : "final-safe"}`}>
-              <span className="final-label">{isOut ? "Out" : "On base"}</span>
+              <span className="final-label">
+                {sideRetired ? "Side retired" : isOut ? "Out" : "On base"}
+              </span>
               <h2>{last.headline}</h2>
               <p>
-                {atBat.pitches.length} pitch{atBat.pitches.length === 1 ? "" : "es"} · {last.description}
+                {hitter.name} · {atBat.pitches.length} pitch{atBat.pitches.length === 1 ? "" : "es"} ·{" "}
+                {last.description}
               </p>
               <div className="final-actions">
-                <button className="throw" onClick={() => startAtBat(true)}>
-                  Face again <kbd>Space</kbd>
-                </button>
-                <button className="ghost" onClick={() => startAtBat(false)}>
-                  Reset
-                </button>
+                {lineup.length > 1 ? (
+                  <>
+                    <button className="throw" onClick={nextBatter}>
+                      {sideRetired ? "New inning" : "Next batter"}: {nextHitter.name.split(" ").slice(-1)[0]}{" "}
+                      <kbd>Space</kbd>
+                    </button>
+                    <button className="ghost" onClick={() => startAtBat(batterIndex, true)}>
+                      Face again
+                    </button>
+                  </>
+                ) : (
+                  <button className="throw" onClick={() => startAtBat(batterIndex, true)}>
+                    Face again <kbd>Space</kbd>
+                  </button>
+                )}
               </div>
             </div>
           </div>
         )}
       </div>
 
-      <ResultBanner outcome={last} showWhy={showWhy} onToggleWhy={() => setShowWhy((v) => !v)} />
+      <ResultBanner outcome={last} sourceLabel={hitter.source.label} showWhy={showWhy} onToggleWhy={() => setShowWhy((v) => !v)} />
 
       <PitchMenu
         pitches={pitcher.pitches}
@@ -170,7 +193,8 @@ export default function App() {
         hasTarget={!!target}
       />
       <footer className="foot">
-        {pitcher.name} ({pitcher.hand}HP) · {pitcher.source.label} · {hitter.source.label}
+        {pitcher.name} ({pitcher.hand}HP) · {hitter.blurb ? `${hitter.name} ${hitter.blurb} · ` : ""}
+        {hitter.source.label}
       </footer>
     </div>
   );

@@ -54,7 +54,7 @@ export interface PitcherProfile {
 // ---------------------------------------------------------------------------
 
 export interface DataSource {
-  kind: "synthetic" | "scouting_report" | "api";
+  kind: "synthetic" | "profile" | "scouting_report" | "api";
   label: string; // e.g. "Synthetic demo profile — not real MLB data"
 }
 
@@ -112,6 +112,9 @@ export interface HitterProfile {
   source: DataSource;
   /** Short scouting blurb shown on the hitter card (no invented stats). */
   blurb?: string;
+  number?: string;
+  position?: string;
+  team?: string;
 }
 
 // ---------------------------------------------------------------------------

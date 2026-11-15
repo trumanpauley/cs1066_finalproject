@@ -13,7 +13,10 @@ import sampleHitters from "./sampleHitters.json";
 
 export interface SimulatorData {
   pitcher: PitcherProfile;
+  /** In batting order when they come from a loaded lineup. */
   hitters: HitterProfile[];
+  /** Opponent name when hitters come from a team lineup. */
+  team?: string;
 }
 
 declare global {
@@ -52,17 +55,23 @@ export function validatePitcher(p: PitcherProfile): string[] {
 
 export function loadSimulatorData(): SimulatorData {
   const injected = typeof window !== "undefined" ? window.PITCHIQ_DATA : undefined;
-  const data: SimulatorData = {
-    pitcher: (injected?.pitcher ?? samplePitcher) as PitcherProfile,
-    hitters: (injected?.hitters?.length ? injected.hitters : sampleHitters) as HitterProfile[],
-  };
-  const errors = [...validatePitcher(data.pitcher), ...data.hitters.flatMap(validateHitter)];
-  if (errors.length) {
-    console.warn("PitchIQ simulator data issues — falling back to samples:", errors);
-    return {
-      pitcher: samplePitcher as PitcherProfile,
-      hitters: sampleHitters as HitterProfile[],
-    };
+
+  // Pitcher and hitters are validated separately so one bad record never
+  // throws away the rest; anything invalid falls back to the samples.
+  let pitcher = samplePitcher as PitcherProfile;
+  if (injected?.pitcher) {
+    const errors = validatePitcher(injected.pitcher);
+    if (errors.length) console.warn("PitchIQ: injected pitcher ignored:", errors);
+    else pitcher = injected.pitcher;
   }
-  return data;
+
+  const lineup = (injected?.hitters ?? []).filter((h) => {
+    const errors = validateHitter(h);
+    if (errors.length) console.warn(`PitchIQ: hitter ${h?.name ?? "?"} ignored:`, errors);
+    return errors.length === 0;
+  });
+
+  return lineup.length
+    ? { pitcher, hitters: lineup, team: injected?.team || undefined }
+    : { pitcher, hitters: sampleHitters as HitterProfile[] };
 }
