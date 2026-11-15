@@ -7,3 +7,9 @@ textColor = "#e6e9ef"
 
 [browser]
 gatherUsageStats = false
+
+[server]
+# Watch only the app's own source files by polling. The default (inotify)
+# watcher recursively watches the whole project folder, and a virtualenv or
+# node_modules inside it overflows the inotify queue in Codespaces.
+fileWatcherType = "poll"
