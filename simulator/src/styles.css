@@ -416,9 +416,40 @@ select {
 }
 
 .pitch-code {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-weight: 800;
   font-size: 13px;
   color: var(--accent);
+}
+
+.pitch-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.move-line {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.move-hint {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 12px;
+}
+
+.trail polyline,
+.break-arrow {
+  animation: fade 0.4s ease-out;
 }
 
 .pitch-top {

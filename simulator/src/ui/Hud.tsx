@@ -1,5 +1,6 @@
 import type { AtBatState, DataSource, HitterProfile, PitchDefinition, PitchOutcome, PlateAppearanceResult } from "../engine";
 import { CALL_COLORS } from "./Scene";
+import { describeMovement, pitchColor } from "./pitchStyle";
 
 function Dots({ label, n, max, color }: { label: string; n: number; max: number; color: string }) {
   return (
@@ -86,10 +87,13 @@ export function PitchMenu({ pitches, selected, onSelect, onThrow, canThrow, hasT
             aria-checked={p.code === selected}
             className={`pitch ${p.code === selected ? "selected" : ""}`}
             onClick={() => onSelect(p.code)}
-            title={`${p.name} · ${p.velocity} mph · ${Math.round(p.usage * 100)}% usage (key ${i + 1})`}
+            title={`${p.name} · ${p.velocity} mph · ${describeMovement(p)} · ${Math.round(p.usage * 100)}% usage (key ${i + 1})`}
           >
             <span className="pitch-top">
-              <span className="pitch-code">{p.code}</span>
+              <span className="pitch-code" style={{ color: pitchColor(p.code) }}>
+                <span className="pitch-dot" style={{ background: pitchColor(p.code) }} />
+                {p.code}
+              </span>
               <span className="pitch-velo">{p.velocity}</span>
             </span>
             <span className="pitch-name">{p.name}</span>
@@ -106,12 +110,13 @@ export function PitchMenu({ pitches, selected, onSelect, onThrow, canThrow, hasT
 
 interface ResultProps {
   outcome: PitchOutcome | null;
+  pitchDef?: PitchDefinition;
   sourceLabel: string;
   showWhy: boolean;
   onToggleWhy: () => void;
 }
 
-export function ResultBanner({ outcome, sourceLabel, showWhy, onToggleWhy }: ResultProps) {
+export function ResultBanner({ outcome, pitchDef, sourceLabel, showWhy, onToggleWhy }: ResultProps) {
   if (!outcome) return null;
   const color = CALL_COLORS[outcome.call];
   const bb = outcome.battedBall;
@@ -125,6 +130,13 @@ export function ResultBanner({ outcome, sourceLabel, showWhy, onToggleWhy }: Res
           {showWhy ? "Hide" : "Why?"}
         </button>
       </div>
+      {pitchDef && (
+        <div className="move-line" style={{ color: pitchColor(pitchDef.code) }}>
+          <span className="pitch-dot" style={{ background: pitchColor(pitchDef.code) }} />
+          {pitchDef.name} break: {describeMovement(pitchDef)}
+          <span className="move-hint"> · dashed ring = same pitch with no spin</span>
+        </div>
+      )}
       {bb && (
         <div className="bb-chips">
           <span>{bb.exitVelo} mph EV</span>

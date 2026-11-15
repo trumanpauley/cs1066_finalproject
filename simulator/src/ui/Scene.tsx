@@ -4,6 +4,15 @@ import type { Frame } from "./animation";
 import { CatcherFigure, HitterFigure, Mitt, UmpireFigure } from "./figures";
 import { polygon, project, unprojectAtPlate, VIEW_H, VIEW_W } from "./projection";
 
+export interface PitchTrail {
+  n: number;
+  color: string;
+  real: { sx: number; sy: number }[];
+  ghost: { sx: number; sy: number }[];
+  /** Total spin-induced break, inches. */
+  breakIn: number;
+}
+
 export interface PitchMarker {
   n: number;
   loc: Location;
@@ -25,10 +34,13 @@ interface SceneProps {
   aiming: boolean;
   frame: Frame | null;
   markers: PitchMarker[];
+  trails: PitchTrail[];
+  /** Color of the pitch in flight (for the ghost ball). */
+  flightColor?: string;
   onAim: (loc: Location) => void;
 }
 
-export function Scene({ hitter, target, aiming, frame, markers, onAim }: SceneProps) {
+export function Scene({ hitter, target, aiming, frame, markers, trails, flightColor, onAim }: SceneProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [hover, setHover] = useState<Location | null>(null);
 
@@ -164,6 +176,10 @@ export function Scene({ hitter, target, aiming, frame, markers, onAim }: ScenePr
           strokeWidth={1.6}
         />
 
+        {trails.map((t, i) => (
+          <TrailView key={t.n} trail={t} latest={i === trails.length - 1 && !frame?.ball} />
+        ))}
+
         {markers.map((m) => {
           const p = project(m.loc.x, 0, m.loc.z);
           return (
@@ -178,6 +194,20 @@ export function Scene({ hitter, target, aiming, frame, markers, onAim }: ScenePr
 
         {target && aiming && <Crosshair loc={target} />}
       </g>
+
+      {/* ghost ball: same pitch with no spin-induced movement */}
+      {frame?.ghost && frame.ball && (
+        <circle
+          cx={frame.ghost.sx}
+          cy={frame.ghost.sy}
+          r={frame.ghost.r}
+          fill="none"
+          stroke={flightColor ?? "#ffffff"}
+          strokeWidth={1.4}
+          strokeDasharray="3 2.5"
+          opacity={frame.ghost.opacity}
+        />
+      )}
 
       {/* ball */}
       {frame?.trail.map((t, i) => (
@@ -223,6 +253,66 @@ function Crosshair({ loc }: { loc: Location }) {
       <circle r={11} fill="none" stroke="#7aa2f7" strokeWidth={2} />
       <circle r={2.5} fill="#7aa2f7" />
       <path d="M-18,0 L-13,0 M13,0 L18,0 M0,-18 L0,-13 M0,13 L0,18" stroke="#7aa2f7" strokeWidth={2} />
+    </g>
+  );
+}
+
+const toPoints = (pts: { sx: number; sy: number }[]) =>
+  pts.map((p) => `${p.sx.toFixed(1)},${p.sy.toFixed(1)}`).join(" ");
+
+/** A pitch's flight path; the latest one also shows its break. */
+function TrailView({ trail, latest }: { trail: PitchTrail; latest: boolean }) {
+  const end = trail.real[trail.real.length - 1];
+  const ghostEnd = trail.ghost[trail.ghost.length - 1];
+  const dx = end.sx - ghostEnd.sx;
+  const dy = end.sy - ghostEnd.sy;
+  const len = Math.hypot(dx, dy);
+  // Arrowhead at the actual location, pointing along the break.
+  const ux = len ? dx / len : 0;
+  const uy = len ? dy / len : 0;
+  const head = `${end.sx},${end.sy} ${end.sx - ux * 7 - uy * 4},${end.sy - uy * 7 + ux * 4} ${end.sx - ux * 7 + uy * 4},${end.sy - uy * 7 - ux * 4}`;
+  // Label beside the arrow's midpoint (offset perpendicular to it).
+  const labelX = ghostEnd.sx + dx / 2 - uy * 22;
+  const labelY = ghostEnd.sy + dy / 2 + ux * 22;
+
+  return (
+    <g className="trail">
+      <polyline
+        points={toPoints(trail.real)}
+        fill="none"
+        stroke={trail.color}
+        strokeWidth={latest ? 2 : 1.4}
+        strokeLinecap="round"
+        opacity={latest ? 0.75 : 0.3}
+      />
+      {latest && len > 4 && (
+        <g className="break-arrow">
+          <polyline
+            points={toPoints(trail.ghost)}
+            fill="none"
+            stroke="#ffffff"
+            strokeWidth={1.1}
+            strokeDasharray="4 4"
+            opacity={0.35}
+          />
+          <circle cx={ghostEnd.sx} cy={ghostEnd.sy} r={5} fill="none" stroke="#ffffff" strokeDasharray="2.5 2" opacity={0.7} />
+          <line
+            x1={ghostEnd.sx}
+            y1={ghostEnd.sy}
+            x2={end.sx - ux * 6}
+            y2={end.sy - uy * 6}
+            stroke={trail.color}
+            strokeWidth={2}
+          />
+          <polygon points={head} fill={trail.color} />
+          <g transform={`translate(${labelX},${labelY})`}>
+            <rect x={-18} y={-9} width={36} height={16} rx={8} fill="#0e1117" opacity={0.85} />
+            <text textAnchor="middle" y={3} fontSize={10} fontWeight={700} fill={trail.color}>
+              {trail.breakIn} in
+            </text>
+          </g>
+        </g>
+      )}
     </g>
   );
 }

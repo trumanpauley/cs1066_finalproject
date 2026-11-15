@@ -9,9 +9,10 @@ import {
   type PitchOutcome,
 } from "./engine";
 import { loadSimulatorData } from "./data/loaders";
-import { frameAt, makeAnimation, type Frame, type PitchAnimation } from "./ui/animation";
+import { flightPaths, frameAt, makeAnimation, type Frame, type PitchAnimation } from "./ui/animation";
+import { pitchColor, totalBreak } from "./ui/pitchStyle";
 import { BoxScore, PitchMenu, ResultBanner, Scoreboard, type BoxEntry } from "./ui/Hud";
-import { Scene, type PitchMarker } from "./ui/Scene";
+import { Scene, type PitchMarker, type PitchTrail } from "./ui/Scene";
 
 declare global {
   interface Window {
@@ -38,6 +39,8 @@ export default function App() {
   const hitter = lineup[batterIndex] ?? lineup[0];
   const nextHitter = lineup[(batterIndex + 1) % lineup.length];
   const [box, setBox] = useState<BoxEntry[]>([]);
+  // Flight paths of this plate appearance's pitches (cleared each new PA).
+  const [trails, setTrails] = useState<PitchTrail[]>([]);
   const [atBat, setAtBat] = useState<AtBatState>(() => newAtBat());
   const [pitchCode, setPitchCode] = useState(pitcher.pitches[0].code);
   const [target, setTarget] = useState<Location | null>(null);
@@ -58,6 +61,15 @@ export default function App() {
       setFrame(f);
       if (f.done) {
         setAtBat(next);
+        setTrails((t) => [
+          ...t,
+          {
+            n: next.pitches.length,
+            color: pitchColor(anim.def.code),
+            ...flightPaths(anim),
+            breakIn: totalBreak(anim.def),
+          },
+        ]);
         if (next.result) {
           const result = next.result;
           setBox((b) => [...b, { hitter: anim.hitterName, result, pitches: next.pitches.length }]);
@@ -87,6 +99,7 @@ export default function App() {
       setBatterIndex(index);
       setAtBat(newAtBat(keepOuts && !sideRetired ? atBat.outs : 0));
       if (!keepOuts || sideRetired) setBox([]);
+      setTrails([]);
       setLast(null);
       setFrame(null);
       setPhase("aiming");
@@ -144,6 +157,8 @@ export default function App() {
           aiming={phase === "aiming"}
           frame={phase === "aiming" ? null : frame}
           markers={markers}
+          trails={trails}
+          flightColor={pending.current ? pitchColor(pending.current.anim.def.code) : undefined}
           onAim={setTarget}
         />
         {phase === "aiming" && !target && atBat.pitches.length === 0 && (
@@ -182,7 +197,10 @@ export default function App() {
         )}
       </div>
 
-      <ResultBanner outcome={last} sourceLabel={hitter.source.label} showWhy={showWhy} onToggleWhy={() => setShowWhy((v) => !v)} />
+      <ResultBanner
+        outcome={last}
+        pitchDef={last ? pitcher.pitches.find((p) => p.code === last.pitch.code) : undefined}
+        sourceLabel={hitter.source.label} showWhy={showWhy} onToggleWhy={() => setShowWhy((v) => !v)} />
 
       <PitchMenu
         pitches={pitcher.pitches}
