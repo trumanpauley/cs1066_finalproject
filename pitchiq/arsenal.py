@@ -15,6 +15,9 @@ from datetime import datetime
 
 # Qualitative fields the pitcher writes; never overwritten by report data.
 QUALITATIVE_FIELDS = ("notes", "plan_vs_rhh", "plan_vs_lhh", "best_counts", "confidence")
+# Release numbers the pitcher typed in (inches). They override report values
+# and, like the fields above, survive rebuilding the arsenal from reports.
+MANUAL_RELEASE_FIELDS = ("release_height_in", "extension_in")
 
 COUNT_OPTIONS = ["First pitch", "Ahead", "Even", "Behind", "Two strikes"]
 CONFIDENCE_OPTIONS = ["Developing", "Solid", "Trusted", "Best pitch"]
@@ -102,7 +105,8 @@ def merge_into_arsenal(arsenal: list[dict], combined: dict) -> list[dict]:
     merged = []
     ranked = sorted(combined["pitches"].items(), key=lambda kv: -kv[1]["pitches"])
     for name, stats in ranked:
-        entry = {field: existing.get(name, {}).get(field) for field in QUALITATIVE_FIELDS}
+        entry = {field: existing.get(name, {}).get(field)
+                 for field in QUALITATIVE_FIELDS + MANUAL_RELEASE_FIELDS}
         entry.update({
             "pitch": name,
             "velo_low": stats["velo_low"],

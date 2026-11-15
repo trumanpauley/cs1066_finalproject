@@ -10,11 +10,11 @@ export const VIEW_W = 800;
 export const VIEW_H = 600;
 
 const CAMERA_Y = 64; // feet from the plate
-export const CAMERA_Z = 5.4; // eye height
+export const CAMERA_Z = 6.0; // a pitcher's eye height
 const PX_PER_FT_AT_PLATE = 80;
 const FOCAL = PX_PER_FT_AT_PLATE * CAMERA_Y;
 const CENTER_X = VIEW_W / 2;
-const HORIZON_Y = 134;
+const HORIZON_Y = 95;
 
 export interface ScreenPoint {
   sx: number;

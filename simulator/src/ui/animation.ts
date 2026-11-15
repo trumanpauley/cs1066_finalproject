@@ -4,7 +4,7 @@
  */
 
 import type { PitchDefinition, PitchOutcome, PitcherProfile } from "../engine";
-import { CAMERA_Z, project, VIEW_W } from "./projection";
+import { project, VIEW_W } from "./projection";
 
 const G = 32.17; // ft/s²
 const MPH_TO_FPS = 1.4667;
@@ -13,14 +13,15 @@ const WINDUP_MS = 260;
 const AFTER_MS = 900;
 /** The flight is shown from this fraction on: the camera sits just behind
  *  the release point, so the first few feet would be off-screen. */
-const VISIBLE_FROM = 0.1;
+const VISIBLE_FROM = 0.15;
 /**
- * Visual shape of the break: movement grows as t^BREAK_POWER. Constant spin
- * force gives t^2; a slightly higher power keeps the pitch on the ghost's
- * line longer and shows the break late, the way hitters perceive it. Only
- * the drawing changes — the actual location comes from the engine.
+ * Spin force is roughly constant through the flight, so movement away from
+ * the no-spin path grows with t². (An earlier version used a higher power to
+ * "show the break late", but that made fastballs with big ride appear to
+ * rise near the plate — physically impossible, since gravity always wins.)
+ * The break still looks late on screen because of perspective.
  */
-const BREAK_POWER = 2.6;
+const BREAK_POWER = 2;
 const PATH_SAMPLES = 36;
 
 export interface PitchAnimation {
@@ -52,13 +53,22 @@ export interface Frame {
   done: boolean;
 }
 
+/** This pitch's release (feet): its own when given, else the pitcher's. */
+export function releaseOf(def: PitchDefinition, pitcher: PitcherProfile) {
+  return {
+    x: pitcher.release.x,
+    z: def.release?.z ?? pitcher.release.z,
+    extension: def.release?.extension ?? pitcher.release.extension,
+  };
+}
+
 export function makeAnimation(
   outcome: PitchOutcome,
   pitcher: PitcherProfile,
   jitter: number,
 ): PitchAnimation {
   const def = pitcher.pitches.find((p) => p.code === outcome.pitch.code)!;
-  const flightSec = (60.5 - pitcher.release.extension) / (outcome.pitch.velocity * MPH_TO_FPS);
+  const flightSec = (60.5 - releaseOf(def, pitcher).extension) / (outcome.pitch.velocity * MPH_TO_FPS);
   const flightMs = flightSec * 1000 * SLOW_MO;
   return { outcome, pitcher, def, flightMs, totalMs: WINDUP_MS + flightMs + AFTER_MS, jitter };
 }
@@ -86,10 +96,12 @@ export function movementFeet(anim: PitchAnimation): { x: number; z: number } {
  */
 function ghostWorld(anim: PitchAnimation, t: number): Vec {
   const { pitcher, outcome } = anim;
-  // Visual release near the camera's eye line, slightly to the arm side;
-  // the physics (actual location) is unaffected.
-  const rel = { x: pitcher.release.x * 0.35, z: CAMERA_Z + 0.15 };
-  const releaseY = 60.5 - pitcher.release.extension;
+  const release = releaseOf(anim.def, pitcher);
+  // True release height and extension. Sideways, the hand is drawn closer to
+  // the camera's line than it really is (the camera sits behind the pitcher's
+  // head, which is between the rubber's center and his hand).
+  const rel = { x: release.x * 0.2, z: release.z };
+  const releaseY = 60.5 - release.extension;
   const T = releaseY / (outcome.pitch.velocity * MPH_TO_FPS);
   const drop = 0.5 * G * T * T; // gravity sag below a straight line
   const m = movementFeet(anim);

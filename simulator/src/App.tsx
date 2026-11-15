@@ -9,7 +9,7 @@ import {
   type PitchOutcome,
 } from "./engine";
 import { loadSimulatorData } from "./data/loaders";
-import { flightPaths, frameAt, makeAnimation, type Frame, type PitchAnimation } from "./ui/animation";
+import { flightPaths, frameAt, makeAnimation, releaseOf, type Frame, type PitchAnimation } from "./ui/animation";
 import { pitchColor, totalBreak } from "./ui/pitchStyle";
 import { BoxScore, PitchMenu, ResultBanner, Scoreboard, type BoxEntry } from "./ui/Hud";
 import { Scene, type PitchMarker, type PitchTrail } from "./ui/Scene";
@@ -133,6 +133,7 @@ export default function App() {
     call: p.call,
   }));
 
+  const lastDef = last ? pitcher.pitches.find((p) => p.code === last.pitch.code) : undefined;
   const result = atBat.result;
   const isOut = result ? OUT_RESULTS.includes(result) : false;
   const sideRetired = atBat.outs >= 3;
@@ -199,7 +200,8 @@ export default function App() {
 
       <ResultBanner
         outcome={last}
-        pitchDef={last ? pitcher.pitches.find((p) => p.code === last.pitch.code) : undefined}
+        pitchDef={lastDef}
+        releaseHeight={lastDef ? releaseOf(lastDef, pitcher).z : undefined}
         sourceLabel={hitter.source.label} showWhy={showWhy} onToggleWhy={() => setShowWhy((v) => !v)} />
 
       <PitchMenu

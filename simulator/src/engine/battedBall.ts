@@ -87,7 +87,7 @@ export function simulateBattedBall(
   const inside = clamp(insideness(pitch.actual.x, hitter.bats) / ZONE_HALF_WIDTH, -1.5, 1.5);
   let pull = bb.pullBias + 10 * inside;
   if (pitch.category === "offspeed") pull += 5; // out in front
-  if (pitch.category === "fastball") pull -= 0.3 * (pitch.velocity - 92); // late
+  if (pitch.category === "fastball") pull -= 0.3 * (pitch.perceivedVelocity - 92); // late
   const sprayAngle = clamp(pullSign * pull + rng.normal() * bb.spraySd, -44, 44);
 
   const distance = estimateDistance(exitVelo, launchAngle);

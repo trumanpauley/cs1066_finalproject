@@ -111,12 +111,14 @@ export function PitchMenu({ pitches, selected, onSelect, onThrow, canThrow, hasT
 interface ResultProps {
   outcome: PitchOutcome | null;
   pitchDef?: PitchDefinition;
+  /** Release height (ft) used for this pitch. */
+  releaseHeight?: number;
   sourceLabel: string;
   showWhy: boolean;
   onToggleWhy: () => void;
 }
 
-export function ResultBanner({ outcome, pitchDef, sourceLabel, showWhy, onToggleWhy }: ResultProps) {
+export function ResultBanner({ outcome, pitchDef, releaseHeight, sourceLabel, showWhy, onToggleWhy }: ResultProps) {
   if (!outcome) return null;
   const color = CALL_COLORS[outcome.call];
   const bb = outcome.battedBall;
@@ -137,6 +139,14 @@ export function ResultBanner({ outcome, pitchDef, sourceLabel, showWhy, onToggle
           <span className="move-hint"> · dashed ring = same pitch with no spin</span>
         </div>
       )}
+      <div className="release-line">
+        Release {releaseHeight ? `${feetInches(releaseHeight)} high · ` : ""}
+        {feetInches(outcome.pitch.extension)} extension · plays like{" "}
+        <b>{outcome.pitch.perceivedVelocity.toFixed(1)} mph</b>
+        {Math.abs(outcome.pitch.perceivedVelocity - outcome.pitch.velocity) >= 0.1 && (
+          <span className="move-hint"> (radar {outcome.pitch.velocity.toFixed(1)})</span>
+        )}
+      </div>
       {bb && (
         <div className="bb-chips">
           <span>{bb.exitVelo} mph EV</span>
@@ -203,4 +213,15 @@ export function BoxScore({ entries, isOut }: { entries: BoxEntry[]; isOut: (r: P
       ))}
     </div>
   );
+}
+
+/** 6.3 -> 6'4" */
+function feetInches(feet: number): string {
+  let ft = Math.floor(feet);
+  let inches = Math.round((feet - ft) * 12);
+  if (inches === 12) {
+    ft += 1;
+    inches = 0;
+  }
+  return `${ft}'${inches}"`;
 }

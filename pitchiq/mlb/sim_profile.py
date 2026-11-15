@@ -194,21 +194,32 @@ def simulator_hitter(profile: dict, season: int) -> dict:
     }
 
 
+def pitch_release_inches(p: dict) -> tuple[float | None, float | None]:
+    """(release height, extension) in inches for one arsenal pitch.
+
+    Values typed on My Arsenal win; otherwise the season numbers from
+    uploaded pitching reports; otherwise None.
+    """
+    stats = p.get("stats") or {}
+    height = p.get("release_height_in") or stats.get("release_height_in")
+    ext = p.get("extension_in") or stats.get("extension_in")
+    return (float(height) if height else None), (float(ext) if ext else None)
+
+
 def simulator_pitcher(arsenal: list[dict], throwing_hand: str | None, name: str = "") -> dict | None:
     """The user's My Arsenal as a simulator PitcherProfile (None if empty)."""
     pitches = []
+    heights, exts = [], []
     known = [p for p in arsenal if p.get("pitch") in PITCH_CODE]
     total_usage = sum(float(p.get("usage_pct") or 0) for p in known)
-    for p in arsenal:
-        pitch = p.get("pitch")
-        if pitch not in PITCH_CODE:
-            continue
+    for p in known:
+        pitch = p["pitch"]
         family = _SIM_FAMILY[PITCH_FAMILY[pitch]]
         velo_t, hb_t, ivb_t = TYPICAL[pitch]
         lo, hi = p.get("velo_low"), p.get("velo_high")
         velo = p.get("velo_avg") or ((lo + hi) / 2 if lo and hi else lo or hi or velo_t)
         usage = float(p.get("usage_pct") or 0)
-        pitches.append({
+        entry = {
             "code": PITCH_CODE[pitch],
             "name": DISPLAY_NAME.get(pitch, pitch),
             "category": family,
@@ -218,23 +229,34 @@ def simulator_pitcher(arsenal: list[dict], throwing_hand: str | None, name: str 
             "inducedVerticalBreak": float(p["ivb"]) if p.get("ivb") is not None else float(ivb_t),
             "usage": round(usage / total_usage, 3) if total_usage else round(1 / len(known), 3),
             "command": {"sdX": COMMAND_SD[family], "sdZ": COMMAND_SD[family]},
-        })
+        }
+        height_in, ext_in = pitch_release_inches(p)
+        release = {}
+        if height_in:
+            release["z"] = round(height_in / 12, 2)
+            heights.append(release["z"])
+        if ext_in:
+            release["extension"] = round(ext_in / 12, 2)
+            exts.append(release["extension"])
+        if release:
+            entry["release"] = release
+        pitches.append(entry)
     if not pitches:
         return None
 
     hand = "L" if throwing_hand and throwing_hand.lower().startswith("l") else "R"
-    ext = next((p.get("extension_in") for p in arsenal if p.get("extension_in")), None)
-    height = next((p.get("release_height_in") for p in arsenal if p.get("release_height_in")), None)
     return {
         "id": "my-arsenal",
         "name": name or "My Arsenal",
         "hand": hand,
         # Release x is from the catcher's view: a righty releases on the third-base side.
+        # Pitches without their own release use the average of the others
+        # (or a typical 5.9 ft height / 6.3 ft extension).
         "release": {
             "x": -1.8 if hand == "R" else 1.8,
-            "z": round(height / 12, 2) if height else 5.9,
-            "extension": round(ext / 12, 2) if ext else 6.3,
+            "z": round(sum(heights) / len(heights), 2) if heights else 5.9,
+            "extension": round(sum(exts) / len(exts), 2) if exts else 6.3,
         },
         "pitches": pitches,
-        "source": {"kind": "synthetic", "label": "Your My Arsenal profile"},
+        "source": {"kind": "profile", "label": "Your My Arsenal profile"},
     }

@@ -10,7 +10,7 @@
 
 export * from "./types";
 export { createRng, sampleCategorical, type Rng } from "./rng";
-export { executePitch } from "./execution";
+export { executePitch, perceivedVelocity, REFERENCE_EXTENSION } from "./execution";
 export { swingProbability, zoneWeight } from "./swing";
 export { contactProbabilities } from "./contact";
 export { simulateBattedBall, estimateDistance, hitProbabilities, battedBallType } from "./battedBall";

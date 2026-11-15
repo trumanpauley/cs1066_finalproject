@@ -22,9 +22,10 @@ export function contactProbabilities(
     hitter.rates.outZoneContact + (hitter.rates.zoneContact - hitter.rates.outZoneContact) * w;
   contact *= t.contactMult;
 
-  // Extra velocity is harder to square up.
-  if (pitch.category === "fastball" && pitch.velocity > 93) {
-    contact *= 1 - 0.012 * (pitch.velocity - 93);
+  // Extra velocity is harder to square up — measured as the hitter sees it,
+  // so a long-extension fastball plays up.
+  if (pitch.category === "fastball" && pitch.perceivedVelocity > 93) {
+    contact *= 1 - 0.012 * (pitch.perceivedVelocity - 93);
   }
   // Way off the plate: even a committed swing rarely connects.
   if (d < -0.3) contact *= Math.exp(-(-d - 0.3) / 0.8);

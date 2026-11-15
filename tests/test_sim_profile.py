@@ -117,3 +117,34 @@ def test_data_injection_is_valid_and_script_safe():
     assert out.count("</script>") == 1          # only the injected tag's own closer
     payload = out.split("window.PITCHIQ_DATA = ", 1)[1].split(";</script>", 1)[0]
     assert json.loads(payload)["team"].startswith("Evil")
+
+
+def test_per_pitch_release_prefers_typed_values_then_reports():
+    arsenal = [
+        # typed on My Arsenal (inches): 6'2" high, 7'0" extension
+        {"pitch": "Fastball (4-Seam)", "velo_low": 92, "velo_high": 96, "usage_pct": 50,
+         "ivb": 17, "hb": 8, "release_height_in": 74, "extension_in": 84,
+         "stats": {"release_height_in": 70, "extension_in": 75}},
+        # only report numbers
+        {"pitch": "Slider", "velo_low": 84, "velo_high": 87, "usage_pct": 30, "ivb": 1, "hb": -6,
+         "stats": {"release_height_in": 69, "extension_in": 72}},
+        # nothing: falls back to the pitcher-level average
+        {"pitch": "ChangeUp", "velo_low": 84, "velo_high": 87, "usage_pct": 20, "ivb": 7, "hb": 14},
+    ]
+    p = simulator_pitcher(arsenal, "Right (RHP)")
+    ff, sl, ch = p["pitches"]
+    assert ff["release"] == {"z": round(74 / 12, 2), "extension": 7.0}
+    assert sl["release"] == {"z": round(69 / 12, 2), "extension": 6.0}
+    assert "release" not in ch
+    assert p["release"]["extension"] == 6.5          # mean of 7.0 and 6.0
+    assert p["release"]["z"] == 5.96                 # mean of 6.17 and 5.75
+
+
+def test_rebuilding_from_reports_keeps_typed_release():
+    from pitchiq.arsenal import merge_into_arsenal
+
+    arsenal = [{"pitch": "Slider", "notes": "", "release_height_in": 70.0, "extension_in": 80.0}]
+    combined = {"pitches": {"Slider": {"pitches": 40, "velo_low": 84, "velo_high": 87, "velo_avg": 85,
+                                        "usage_pct": 100, "ivb": 1, "hb": -6, "extension_in": 72}}}
+    merged = merge_into_arsenal(arsenal, combined)
+    assert merged[0]["extension_in"] == 80.0 and merged[0]["release_height_in"] == 70.0

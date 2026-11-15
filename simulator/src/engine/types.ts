@@ -34,6 +34,11 @@ export interface PitchDefinition {
   inducedVerticalBreak: number;
   spinRate?: number; // rpm, when available
   usage: number; // 0..1 share of pitches
+  /**
+   * This pitch's own release (feet): height off the ground and extension
+   * toward the plate. Falls back to the pitcher's release when absent.
+   */
+  release?: { z?: number; extension?: number };
   /** Location scatter around the target (1 SD, feet) on each axis. */
   command: { sdX: number; sdZ: number };
 }
@@ -171,6 +176,13 @@ export interface PitchExecution {
   name: string;
   category: PitchCategory;
   velocity: number;
+  /**
+   * Velocity adjusted for extension: a release closer to the plate gives the
+   * hitter less time, so the pitch "plays" faster (and vice versa).
+   */
+  perceivedVelocity: number;
+  /** Extension used for this pitch (feet). */
+  extension: number;
   target: Location;
   actual: Location;
   inZone: boolean;

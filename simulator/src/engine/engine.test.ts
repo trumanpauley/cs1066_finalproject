@@ -5,6 +5,7 @@ import { validateHitter, validatePitcher } from "../data/loaders";
 import {
   applyCall,
   contactProbabilities,
+  perceivedVelocity,
   createRng,
   describeLocation,
   executePitch,
@@ -220,6 +221,31 @@ describe("count + plate appearance logic", () => {
     const { outcome } = throwPitch(newAtBat(), { pitchCode: "SL", target: { x: 0.9, z: 1.4 } }, pitcher, rhh, createRng(4));
     expect(outcome.explanation.some((e) => /Swing chance \d+%/.test(e))).toBe(true);
     expect(outcome.description).toMatch(/^Slider, \d+ mph, /);
+  });
+});
+
+describe("extension and release", () => {
+  it("longer extension makes a pitch play faster", () => {
+    expect(perceivedVelocity(94, 6.0)).toBeCloseTo(94, 6);
+    expect(perceivedVelocity(94, 7.0)).toBeGreaterThan(95.5);
+    expect(perceivedVelocity(94, 5.0)).toBeLessThan(92.5);
+  });
+
+  it("uses the pitch's own extension, else the pitcher's", () => {
+    const ff = pitcher.pitches[0];
+    const own = executePitch({ ...ff, release: { extension: 7.2 } }, MIDDLE, rhh, createRng(1), 6.0);
+    const fallback = executePitch(ff, MIDDLE, rhh, createRng(1), 6.3);
+    expect(own.extension).toBe(7.2);
+    expect(fallback.extension).toBe(6.3);
+    expect(own.perceivedVelocity).toBeGreaterThan(fallback.perceivedVelocity);
+  });
+
+  it("hitters make less contact against a fastball that plays up", () => {
+    const at = (ext: number) => {
+      const ff = { ...pitcher.pitches[0], velocitySd: 0, command: { sdX: 1e-9, sdZ: 1e-9 }, release: { extension: ext } };
+      return contactProbabilities(executePitch(ff, MIDDLE, rhh, createRng(1)), { balls: 0, strikes: 0 }, rhh);
+    };
+    expect(at(7.2).miss).toBeGreaterThan(at(5.5).miss);
   });
 });
 

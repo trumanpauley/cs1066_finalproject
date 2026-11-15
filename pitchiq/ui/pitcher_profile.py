@@ -276,6 +276,8 @@ def _render_pitch_card(index: int, p: dict) -> None:
                 f"With 2 strikes vs LHH {_pct(s['usage_2k_vl'])} / RHH {_pct(s['usage_2k_vr'])}"
             )
 
+        _render_release_inputs(p)
+
         with st.expander("How I use it"):
             _pitch_text(p, "notes", "How I throw it",
                         "Grip, feel, intent, shape — e.g. 'Sweeper: start it at the hip of a righty and "
@@ -295,6 +297,34 @@ def _render_pitch_card(index: int, p: dict) -> None:
             _seed(key, p.get("confidence"))
             p["confidence"] = right.selectbox("Confidence", CONFIDENCE_OPTIONS, key=key,
                                               placeholder="How much do you trust it?")
+
+
+_RELEASE_INPUTS = (
+    # field (stored in inches), label, example, help
+    ("release_height_in", "Release height (ft)", "6.0",
+     "How high off the ground you let go of this pitch. MLB pitchers are mostly 5.5–6.5 ft."),
+    ("extension_in", "Extension (ft)", "6.3",
+     "How far in front of the rubber you release it. More extension = less time for the "
+     "hitter, so the pitch plays faster. MLB average is about 6.3 ft."),
+)
+
+
+def _render_release_inputs(p: dict) -> None:
+    """Release height + extension for one pitch (feet in the UI, inches stored).
+
+    Blank means "use my reports" (or a typical value in the simulator).
+    """
+    stats = p.get("stats") or {}
+    cols = st.columns(len(_RELEASE_INPUTS))
+    for col, (field, label, example, help_text) in zip(cols, _RELEASE_INPUTS):
+        key = f"q_{field}::{p['pitch']}"
+        saved = p.get(field)
+        _seed(key, round(saved / 12, 2) if saved else None)
+        from_reports = stats.get(field)
+        placeholder = f"Reports: {from_reports / 12:.2f}" if from_reports else f"e.g. {example}"
+        feet = col.number_input(label, min_value=3.0, max_value=8.5, step=0.1, format="%.2f",
+                                key=key, placeholder=placeholder, help=help_text)
+        p[field] = round(feet * 12, 1) if feet else None
 
 
 def _pitch_text(p: dict, field: str, label: str, placeholder: str, height: int) -> None:
@@ -326,6 +356,13 @@ def _render_add_pitch() -> None:
             hb = mv2.number_input("HB (in.)", min_value=-MOVEMENT_RANGE, max_value=MOVEMENT_RANGE,
                                   value=0.0, step=0.1,
                                   help="Horizontal break — positive = arm side, negative = glove side (RHP view).")
+            r1, r2 = st.columns(2)
+            rel_height = r1.number_input("Release height (ft)", min_value=3.0, max_value=8.5, value=None,
+                                         step=0.1, format="%.2f", placeholder="optional, e.g. 6.0",
+                                         help=_RELEASE_INPUTS[0][3])
+            extension = r2.number_input("Extension (ft)", min_value=3.0, max_value=8.5, value=None,
+                                        step=0.1, format="%.2f", placeholder="optional, e.g. 6.3",
+                                        help=_RELEASE_INPUTS[1][3])
             submitted = st.form_submit_button("Add pitch", width="stretch")
         if submitted:
             if pitch in {p["pitch"] for p in st.session_state.arsenal}:
@@ -334,6 +371,8 @@ def _render_add_pitch() -> None:
                 st.session_state.arsenal.append({
                     "pitch": pitch, "velo_low": velo_low, "velo_high": velo_high,
                     "usage_pct": usage, "ivb": ivb, "hb": hb, "notes": "", "source": "manual",
+                    "release_height_in": round(rel_height * 12, 1) if rel_height else None,
+                    "extension_in": round(extension * 12, 1) if extension else None,
                 })
                 st.rerun()
 

@@ -89,7 +89,7 @@ export function throwPitch(
   const countBefore = state.count;
 
   // A: execution
-  const pitch = executePitch(def, input.target, hitter, rng);
+  const pitch = executePitch(def, input.target, hitter, rng, pitcher.release.extension);
 
   // B: swing decision (a pitch at the hitter's body is never offered at)
   const hitsBatter = hitterBodyContains(pitch.actual, hitter);
