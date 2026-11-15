@@ -16,6 +16,7 @@ from pitchiq.ui.extracted import render_extracted_data
 from pitchiq.ui.pitcher_profile import render_pitcher_profile
 from pitchiq.ui.scout import render_scout
 from pitchiq.ui.scouting_report import render_scouting_report
+from pitchiq.ui.simulator import render_simulator
 from pitchiq.ui.uploads import render_uploads
 
 _LOGO_PATH = Path(__file__).parent / "assets" / "logo.svg"
@@ -27,6 +28,10 @@ def _scout_page() -> None:
 
 def _arsenal_page() -> None:
     render_pitcher_profile()
+
+
+def _simulator_page() -> None:
+    render_simulator()
 
 
 def _library_page() -> None:
@@ -54,6 +59,8 @@ def main() -> None:
                 url_path="scout", default=True),
         st.Page(_arsenal_page, title="My Arsenal", icon=":material/sports_baseball:",
                 url_path="arsenal"),
+        st.Page(_simulator_page, title="Pitch Simulator", icon=":material/sports_esports:",
+                url_path="simulator"),
         st.Page(_library_page, title="Scouting Library", icon=":material/folder_open:",
                 url_path="library"),
     ]
