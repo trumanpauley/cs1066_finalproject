@@ -250,8 +250,12 @@ export class PitchScene extends Phaser.Scene {
       .fillStyle(0x000000, 0.3)
       .fillEllipse((fb.x + ff.x) / 2, Math.max(fb.y, ff.y) + 2, Math.abs(ff.x - fb.x) + place.scale * 1.6, place.scale * 0.32);
 
+    // Thighs start a little inside the hip joints so their rounded tops
+    // tuck under the belt instead of bulging past the waist.
+    const inner = (hip: Pt) => ({ x: hip.x + (sk.pelvis.x - hip.x) * 0.35, y: hip.y + 0.06 });
+
     // Back leg (farther from the pitcher) is drawn first.
-    limb(P.backThigh, sk.hips.back, sk.knees.back, 2.1);
+    limb(P.backThigh, inner(sk.hips.back), sk.knees.back, 2.1);
     limb(P.backShin, sk.knees.back, sk.ankles.back, 2.11);
     const cb = S(sk.ankles.back);
     P.backCleat.setPosition(cb.x, cb.y)
@@ -263,13 +267,14 @@ export class PitchScene extends Phaser.Scene {
     const pv = S(sk.pelvis);
     const nk = S(sk.neck);
     const spineAngle = Math.atan2(nk.y - pv.y, nk.x - pv.x) + Math.PI / 2;
-    const hipW = Math.min(1.12, Math.max(0.86, sk.hipSpan + 0.55));
+    // Hips stay inside the jersey's waistline (about 0.84 ft wide closed).
+    const hipW = Math.min(1.0, Math.max(0.72, sk.hipSpan + 0.42));
     P.pelvis.setPosition(pv.x, pv.y)
       .setScale(place.dir * k * (hipW / 0.9), k)
       .setRotation(spineAngle * 0.4)
       .setDepth(2.2);
 
-    limb(P.frontThigh, sk.hips.front, sk.knees.front, 2.3);
+    limb(P.frontThigh, inner(sk.hips.front), sk.knees.front, 2.3);
     limb(P.frontShin, sk.knees.front, sk.ankles.front, 2.31);
     const cf = S(sk.ankles.front);
     P.frontCleat.setPosition(cf.x, cf.y).setScale(place.dir * k, k).setRotation(0).setDepth(2.32);

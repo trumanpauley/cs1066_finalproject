@@ -82,16 +82,21 @@ const P = (u: number, v: number, w: number): V3 => ({ u, v, w });
 // bat tipped back about 45°.
 
 const STANCE: Pose = {
-  pelvis: P(-0.04, -2.8, 0),
-  lean: 0.15,
-  hipOpen: 0.32,
-  shOpen: 0.26,
-  grip: P(-0.36, -4.82, -0.72),
-  // Bat ~45° back over the shoulder, tilted slightly toward the catcher.
-  batYaw: -2.92,
-  batElev: 0.8,
-  front: P(0.08, 0, 0.98),
-  back: P(-0.12, 0, -0.98),
+  // Weight a touch on the back leg, hips over the back half of the base.
+  pelvis: P(-0.1, -2.9, -0.06),
+  lean: 0.17,
+  // Hips stay closed until the swing fires (opening them further would
+  // swap the hips on screen and cross the legs); the shoulders carry the
+  // three-quarter look.
+  hipOpen: 0.08,
+  shOpen: 0.24,
+  // Hands a forearm's length off the back shoulder, just above it.
+  grip: P(-0.66, -4.74, -0.5),
+  // Bat ~45° back behind the head and back shoulder.
+  batYaw: -2.82,
+  batElev: 0.74,
+  front: P(0.1, 0, 1.05),
+  back: P(-0.24, 0, -1.08),
   backHeel: 0,
   headTilt: 0.04,
 };
@@ -100,14 +105,15 @@ const STANCE: Pose = {
 // little, and the front foot takes a short stride (toe tap).
 const LOADED: Pose = {
   ...STANCE,
-  pelvis: P(-0.14, -2.76, -0.1),
-  lean: 0.1,
-  hipOpen: 0.14,
-  shOpen: 0.04,
-  grip: P(-0.5, -4.76, -0.92),
-  batYaw: -2.98,
-  batElev: 0.9,
-  front: P(0.12, 0, 1.3),
+  // Sits into the back hip: more knee flex, weight over the back leg.
+  pelvis: P(-0.24, -2.76, -0.18),
+  lean: 0.14,
+  hipOpen: 0.0,
+  shOpen: 0.08,
+  grip: P(-0.78, -4.72, -0.7),
+  batYaw: -2.9,
+  batElev: 0.82,
+  front: P(0.16, 0, 1.36),
 };
 
 const SLOT: Pose = {
@@ -178,12 +184,12 @@ const MISS_FINISH: Pose = {
 // Taking a pitch: stride lands, hands stay back, weight stays centered.
 const TAKE: Pose = {
   ...LOADED,
-  pelvis: P(-0.08, -2.79, -0.02),
-  lean: 0.1,
-  hipOpen: 0.26,
-  shOpen: 0.14,
-  grip: P(-0.44, -4.82, -0.84),
-  batElev: 0.92,
+  pelvis: P(-0.12, -2.8, -0.06),
+  lean: 0.13,
+  hipOpen: 0.06,
+  shOpen: 0.16,
+  grip: P(-0.72, -4.76, -0.62),
+  batElev: 0.84,
 };
 
 // Bailing out on an inside pitch: turn away, drop the hands, duck.
@@ -258,15 +264,36 @@ function poseFor(m: HitterMotion, timeMs: number): Pose {
 
   if (m.flinch > 0) pose = mix(pose, FLINCH, smooth(clamp01(m.flinch)));
 
-  // Idle life: breathing and a small bat waggle while waiting.
+  // Idle life while waiting on the pitch. The feet never move; everything
+  // above them does, on a few unrelated rhythms so it never looks looped:
+  //   - weight sways slowly between the legs (knees flex and extend with it)
+  //   - breathing lifts the chest and shoulders slightly
+  //   - the hands draw small circles, so the bat "rides" rather than jitters
+  //   - the bat tips back and forth a little around its 45° rest angle
   const calm = (1 - load) * (m.swing > 0 ? 0 : 1);
   if (calm > 0) {
     const t = timeMs / 1000;
+    const sway = Math.sin(t * 0.9);
+    const breath = Math.sin(t * 1.7);
+    const circle = t * 2.1;
     pose = {
       ...pose,
-      pelvis: { ...pose.pelvis, v: pose.pelvis.v + Math.sin(t * 1.6) * 0.015 * calm },
-      grip: { ...pose.grip, v: pose.grip.v + Math.sin(t * 2.4) * 0.05 * calm, u: pose.grip.u + Math.sin(t * 1.2) * 0.03 * calm },
-      batElev: pose.batElev + Math.sin(t * 2.4 + 0.8) * 0.08 * calm,
+      pelvis: {
+        ...pose.pelvis,
+        u: pose.pelvis.u + sway * 0.035 * calm,
+        v: pose.pelvis.v + (0.02 * Math.abs(sway) - 0.01 + breath * 0.008) * calm,
+      },
+      lean: pose.lean + breath * 0.012 * calm,
+      shOpen: pose.shOpen + Math.sin(t * 0.9 + 0.6) * 0.03 * calm,
+      grip: {
+        ...pose.grip,
+        u: pose.grip.u + Math.cos(circle) * 0.035 * calm + sway * 0.02 * calm,
+        v: pose.grip.v + Math.sin(circle) * 0.035 * calm - breath * 0.01 * calm,
+        w: pose.grip.w,
+      },
+      batElev: pose.batElev + Math.sin(circle + 0.9) * 0.06 * calm,
+      batYaw: pose.batYaw + Math.sin(t * 0.7) * 0.05 * calm,
+      headTilt: pose.headTilt + Math.sin(t * 0.5) * 0.015 * calm,
     };
   }
   return pose;
@@ -338,8 +365,9 @@ export function hitterSkeleton(m: HitterMotion, timeMs: number): HitterSkeleton 
   const hipF = add(p.pelvis, hipAxis, BODY.hipHalf);
   const hipB = add(p.pelvis, hipAxis, -BODY.hipHalf);
   const top = add(p.pelvis, { u: Math.sin(p.lean), v: -Math.cos(p.lean), w: 0 }, BODY.torso);
-  const shF = add(top, shAxis, BODY.shoulderHalf);
-  const shB = add(top, shAxis, -BODY.shoulderHalf);
+  // Natural tilt: front shoulder a little lower than the back one.
+  const shF = add(add(top, shAxis, BODY.shoulderHalf), { u: 0, v: 0.07, w: 0 });
+  const shB = add(add(top, shAxis, -BODY.shoulderHalf), { u: 0, v: -0.05, w: 0 });
   const head = add(top, { u: Math.sin(p.lean + p.headTilt) * 0.55, v: -0.55, w: 0.05 }, 1);
 
   const ce = Math.cos(p.batElev);
@@ -353,7 +381,6 @@ export function hitterSkeleton(m: HitterMotion, timeMs: number): HitterSkeleton 
   const ankleB = add(p.back, { u: 0, v: -BODY.ankle, w: 0 });
   const proj = project2;
   const toPlate = { x: 1, y: 0.15 };
-  const down = { x: 0, y: 1 };
 
   const hips = { front: proj(hipF), back: proj(hipB) };
   const ankles = { front: proj(ankleF), back: proj(ankleB) };
@@ -369,14 +396,16 @@ export function hitterSkeleton(m: HitterMotion, timeMs: number): HitterSkeleton 
     shoulders,
     knees: {
       front: ik(hips.front, ankles.front, BODY.thigh, BODY.shin, toPlate),
-      // Back knee bows out (away from the plate) for a wide, stable base.
-      back: ik(hips.back, ankles.back, BODY.thigh, BODY.shin, { x: -1, y: 0.1 }),
+      // Back knee sets slightly in, toward the plate (no bow-legged look).
+      back: ik(hips.back, ankles.back, BODY.thigh, BODY.shin, toPlate),
     },
     ankles,
     feet: { front: proj(p.front), back: proj(p.back), backHeel: p.backHeel },
     elbows: {
-      front: ik(shoulders.front, hands.bottom, BODY.upperArm, BODY.forearm, down),
-      back: ik(shoulders.back, hands.top, BODY.upperArm, BODY.forearm, { x: -0.4, y: 1 }),
+      // Front elbow hangs down and a little toward the plate; back elbow
+      // down and back (relaxed, not chicken-winged or tucked).
+      front: ik(shoulders.front, hands.bottom, BODY.upperArm, BODY.forearm, { x: 0.35, y: 1 }),
+      back: ik(shoulders.back, hands.top, BODY.upperArm, BODY.forearm, { x: -0.6, y: 1 }),
     },
     hands,
     bat: { knob: proj(knob), tip: proj(tip), towardCatcher: -dir.w },

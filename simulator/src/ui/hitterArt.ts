@@ -72,7 +72,7 @@ function capsule(len: number, r0: number, r1: number) {
 function thigh(): PartTexture {
   const len = BODY.thigh;
   return part("h-thigh", { x: -0.28, y: -0.28, w: len + 0.5, h: 0.56 }, [
-    h("path", { key: "p", d: capsule(len, 0.26, 0.19), fill: "url(#pantsT)", stroke: C.pantsShade, strokeWidth: 0.015 }),
+    h("path", { key: "p", d: capsule(len, 0.23, 0.19), fill: "url(#pantsT)", stroke: C.pantsShade, strokeWidth: 0.015 }),
     h("path", { key: "s", d: `M0,-0.1 L${len},-0.07`, stroke: C.navy, strokeWidth: 0.045 }),
   ], [limbShade("pantsT", C.pants, C.pantsShade)], len);
 }
