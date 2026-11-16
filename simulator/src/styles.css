@@ -633,9 +633,10 @@ kbd {
 }
 
 .sp-photo {
-  width: 84px;
-  height: 84px;
-  border-radius: 50%;
+  /* Portrait card, like a baseball card photo (MLB headshots are 2:3). */
+  width: 72px;
+  height: 96px;
+  border-radius: 8px;
   object-fit: cover;
   object-position: top;
   background: #222a38;
