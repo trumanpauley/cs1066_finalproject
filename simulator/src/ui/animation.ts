@@ -4,7 +4,11 @@
  */
 
 import type { PitchDefinition, PitchOutcome, PitcherProfile } from "../engine";
+import { SWING_CONTACT, type HitterMotion } from "./hitterRig";
 import { project, VIEW_W } from "./projection";
+
+/** Swing duration (slow-motion ms) from first move to finish. */
+const SWING_MS = 520;
 
 const G = 32.17; // ft/s²
 const MPH_TO_FPS = 1.4667;
@@ -47,8 +51,8 @@ export interface Frame {
   /** The ball's shadow on the ground (stadium lights straight overhead). */
   shadow: { sx: number; sy: number; rx: number; alpha: number } | null;
   trail: { sx: number; sy: number }[];
-  swing: number;
-  flinch: number;
+  /** The batter's body motion for this frame. */
+  hitter: HitterMotion;
   mitt: { x: number; z: number; pop: number };
   arrived: boolean;
   done: boolean;
@@ -173,19 +177,33 @@ export function frameAt(anim: PitchAnimation, elapsed: number): Frame {
     ghost: null,
     shadow: null,
     trail: [],
-    swing: 0,
-    flinch: 0,
+    hitter: { load: 0, swing: 0, take: 0, flinch: 0, mode: "idle" },
     mitt: { x: target.x, z: target.z, pop: 0 },
     arrived,
     done: elapsed >= anim.totalMs,
   };
 
-  // Swing: bat starts ~170 ms before the ball arrives (slow-motion time).
-  if (outcome.swing.swung) {
-    frame.swing = Math.min(1, Math.max(0, (elapsed - (arriveAt - 170)) / 300));
-  }
-  if (outcome.call === "hit_by_pitch" && arrived) {
-    frame.flinch = Math.min(1, after / 120) * Math.max(0, 1 - (after - 300) / 400);
+  // Batter: loads (hands back, stride) as the pitch is delivered, then
+  // swings so the barrel reaches the ball at contact, takes, or bails out.
+  const clamp01 = (t: number) => Math.min(1, Math.max(0, t));
+  const swung = outcome.swing.swung;
+  frame.hitter = {
+    load: clamp01((elapsed - flightStart * 0.3) / (flightStart * 0.7 + anim.flightMs * 0.5)),
+    swing: swung ? clamp01((elapsed - (arriveAt - SWING_CONTACT * SWING_MS)) / SWING_MS) : 0,
+    take: swung ? 0 : clamp01((elapsed - (arriveAt - 120)) / 380),
+    flinch: 0,
+    mode:
+      outcome.call === "hit_by_pitch"
+        ? "hbp"
+        : !swung
+          ? "take"
+          : outcome.call === "swinging_strike"
+            ? "miss"
+            : "contact",
+  };
+  if (outcome.call === "hit_by_pitch") {
+    // He sees it coming and starts to bail just before it gets there.
+    frame.hitter.flinch = clamp01((elapsed - (arriveAt - 140)) / 220) * clamp01(1 - (after - 500) / 500);
   }
 
   // Taken or missed pitches: the catcher reaches to where the ball is going.

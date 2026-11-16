@@ -8,18 +8,11 @@
 
 import { createElement as h, type ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import {
-  CatcherFigure,
-  HITTER_FRAME,
-  HitterBody,
-  HitterHead,
-  MittShape,
-  UmpireFigure,
-} from "./figures";
+import { CatcherFigure, MittShape, UmpireFigure } from "./figures";
 import { polygon, project, VIEW_H, VIEW_W } from "./projection";
+import { TEXTURE_RES } from "./textureRes";
 
-/** Texture pixels per scene pixel (the game renders at 2× for crispness). */
-export const TEXTURE_RES = 2;
+export { TEXTURE_RES };
 
 export interface SvgTexture {
   key: string;
@@ -112,16 +105,6 @@ function Field() {
   );
 }
 
-/** Pixels per local foot in the hitter textures. */
-export const HITTER_PX_PER_FT = 80 * TEXTURE_RES;
-
-function hitterTexture(key: string, part: ReactElement): SvgTexture {
-  const f = HITTER_FRAME;
-  const width = Math.round(f.w * HITTER_PX_PER_FT);
-  const height = Math.round(f.h * HITTER_PX_PER_FT);
-  return { key, svg: svgDoc(`${f.x} ${f.y} ${f.w} ${f.h}`, width, height, part), width, height };
-}
-
 /** Mitt texture radius in texture pixels. */
 export const MITT_TEX_R = 48;
 
@@ -131,8 +114,6 @@ export function buildSvgTextures(): SvgTexture[] {
   const H = VIEW_H * TEXTURE_RES;
   return [
     { key: "field", svg: svgDoc(`0 0 ${VIEW_W} ${VIEW_H}`, W, H, h(Field)), width: W, height: H },
-    hitterTexture("hitter-body", h(HitterBody)),
-    hitterTexture("hitter-head", h(HitterHead)),
     {
       key: "mitt",
       svg: svgDoc("-1.1 -1.1 2.2 2.2", MITT_TEX_R * 2.2, MITT_TEX_R * 2.2, h(MittShape)),

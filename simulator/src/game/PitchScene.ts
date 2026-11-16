@@ -10,10 +10,59 @@
 
 import Phaser from "phaser";
 import { zoneBounds, type HitterProfile, type Location } from "../engine";
-import { hitterPlacement, hitterRig, HITTER_FRAME, mittScreen, type Pt } from "../ui/figures";
+import { hitterPlacement, mittScreen } from "../ui/figures";
+import { buildHitterParts, PART_PX, type PartTexture } from "../ui/hitterArt";
+import { hitterSkeleton, type HitterMotion, type Pt } from "../ui/hitterRig";
 import { project, unprojectAtPlate, VIEW_H, VIEW_W } from "../ui/projection";
 import { CALL_COLORS, type PitchFx, type PitchTrail, type StageState } from "../ui/sceneTypes";
-import { buildSvgTextures, HITTER_PX_PER_FT, MITT_TEX_R, svgDataUrl, TEXTURE_RES } from "../ui/textures";
+import { buildSvgTextures, MITT_TEX_R, svgDataUrl, TEXTURE_RES } from "../ui/textures";
+
+const IDLE: HitterMotion = { load: 0, swing: 0, take: 0, flinch: 0, mode: "idle" };
+
+/**
+ * Dev aid: `?pose=contact:0.4` (or miss/take/load/hbp) freezes the batter at
+ * a point in that motion, for tuning the rig. Ignored when absent.
+ */
+function debugPose(): HitterMotion | null {
+  const raw = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("pose");
+  if (!raw) return null;
+  const [mode, value] = raw.split(":");
+  const t = Math.min(1, Math.max(0, Number(value ?? 1)));
+  switch (mode) {
+    case "load":
+      return { ...IDLE, load: t, mode: "take" };
+    case "take":
+      return { ...IDLE, load: 1, take: t, mode: "take" };
+    case "contact":
+    case "miss":
+      return { ...IDLE, load: 1, swing: t, mode };
+    case "hbp":
+      return { ...IDLE, load: 1, flinch: t, mode: "hbp" };
+    default:
+      return null;
+  }
+}
+const DEBUG_POSE = debugPose();
+
+/** Batter part images, posed every frame. */
+interface HitterParts {
+  backThigh: Phaser.GameObjects.Image;
+  backShin: Phaser.GameObjects.Image;
+  backCleat: Phaser.GameObjects.Image;
+  frontThigh: Phaser.GameObjects.Image;
+  frontShin: Phaser.GameObjects.Image;
+  frontCleat: Phaser.GameObjects.Image;
+  pelvis: Phaser.GameObjects.Image;
+  torso: Phaser.GameObjects.Image;
+  head: Phaser.GameObjects.Image;
+  backUpper: Phaser.GameObjects.Image;
+  backFore: Phaser.GameObjects.Image;
+  frontUpper: Phaser.GameObjects.Image;
+  frontFore: Phaser.GameObjects.Image;
+  topGlove: Phaser.GameObjects.Image;
+  bottomGlove: Phaser.GameObjects.Image;
+  bat: Phaser.GameObjects.Image;
+}
 
 const ACCENT = 0x7aa2f7;
 const FONT = '"Inter", "Segoe UI", system-ui, sans-serif';
@@ -29,9 +78,9 @@ interface Ring {
 export class PitchScene extends Phaser.Scene {
   private getState: () => StageState;
   private mitt!: Phaser.GameObjects.Image;
-  private body!: Phaser.GameObjects.Image;
-  private head!: Phaser.GameObjects.Image;
-  private rig!: Phaser.GameObjects.Graphics;
+  private hitterShadow!: Phaser.GameObjects.Graphics;
+  private parts!: HitterParts;
+  private partInfo = new Map<string, PartTexture>();
   private overlay!: Phaser.GameObjects.Graphics;
   private ballG!: Phaser.GameObjects.Graphics;
   private glow!: Phaser.GameObjects.Image;
@@ -52,6 +101,10 @@ export class PitchScene extends Phaser.Scene {
     for (const t of buildSvgTextures()) {
       this.load.svg(t.key, svgDataUrl(t.svg), { width: t.width, height: t.height });
     }
+    for (const t of buildHitterParts()) {
+      this.partInfo.set(t.key, t);
+      this.load.svg(t.key, svgDataUrl(t.svg), { width: t.width, height: t.height });
+    }
   }
 
   create() {
@@ -62,10 +115,29 @@ export class PitchScene extends Phaser.Scene {
 
     this.add.image(0, 0, "field").setOrigin(0).setScale(1 / TEXTURE_RES).setDepth(0);
     this.mitt = this.add.image(0, 0, "mitt").setDepth(1);
-    const f = HITTER_FRAME;
-    this.body = this.add.image(0, 0, "hitter-body").setOrigin(-f.x / f.w, -f.y / f.h).setDepth(2);
-    this.rig = this.add.graphics().setDepth(3);
-    this.head = this.add.image(0, 0, "hitter-head").setOrigin(-f.x / f.w, -f.y / f.h).setDepth(4);
+    this.hitterShadow = this.add.graphics().setDepth(1.9);
+    const img = (key: string) => {
+      const info = this.partInfo.get(key)!;
+      return this.add.image(0, 0, key).setOrigin(info.originX, info.originY);
+    };
+    this.parts = {
+      backThigh: img("h-thigh"),
+      backShin: img("h-shin"),
+      backCleat: img("h-cleat"),
+      frontThigh: img("h-thigh"),
+      frontShin: img("h-shin"),
+      frontCleat: img("h-cleat"),
+      pelvis: img("h-pelvis"),
+      torso: img("h-torso"),
+      head: img("h-head"),
+      backUpper: img("h-upper"),
+      backFore: img("h-fore"),
+      frontUpper: img("h-upper"),
+      frontFore: img("h-fore"),
+      topGlove: img("h-glove"),
+      bottomGlove: img("h-glove"),
+      bat: img("h-bat"),
+    };
     this.overlay = this.add.graphics().setDepth(5);
     this.glow = this.add.image(0, 0, "dot").setBlendMode(Phaser.BlendModes.ADD).setDepth(8).setVisible(false);
     this.ballG = this.add.graphics().setDepth(9);
@@ -153,22 +225,83 @@ export class PitchScene extends Phaser.Scene {
 
   private drawHitter(st: StageState) {
     const place = hitterPlacement(st.hitter.bats);
-    const lean = -0.35 * (st.frame?.flinch ?? 0);
-    const k = place.scale / HITTER_PX_PER_FT;
-    const x = place.sx + place.dir * place.scale * lean;
-    // Negative x-scale mirrors around the feet for a right-handed hitter.
-    this.body.setPosition(x, place.sy).setScale(place.dir * k, k);
-    this.head.setPosition(x, place.sy).setScale(place.dir * k, k);
+    const sk = hitterSkeleton(DEBUG_POSE ?? st.frame?.hitter ?? IDLE, this.time.now);
+    const k = place.scale / PART_PX; // texture px -> screen px
+    const S = (p: Pt) => ({ x: place.sx + place.dir * place.scale * p.x, y: place.sy + place.scale * p.y });
+    const P = this.parts;
 
-    const rig = hitterRig(st.frame?.swing ?? 0);
-    const toScreen = (p: Pt) => ({ x: x + place.dir * place.scale * p.x, y: place.sy + place.scale * p.y });
-    const g = this.rig.clear();
-    brushCurve(g, rig.backArm.map(toScreen), 0.26 * place.scale, 0xc9cfd9);
-    brushCurve(g, rig.frontArm.map(toScreen), 0.26 * place.scale, 0xdfe4ec);
-    brush(g, rig.handle.map(toScreen), 0.1 * place.scale, 0xc8a477);
-    brush(g, rig.barrel.map(toScreen), 0.2 * place.scale, 0xd9b98d);
-    const hands = toScreen(rig.hands);
-    g.fillStyle(0x1a1f29).fillCircle(hands.x, hands.y, 0.13 * place.scale);
+    // Limb from joint a to joint b (stretched to the projected length).
+    const limb = (im: Phaser.GameObjects.Image, a: Pt, b: Pt, depth: number) => {
+      const A = S(a);
+      const B = S(b);
+      const len = Math.hypot(B.x - A.x, B.y - A.y);
+      const bone = this.partInfo.get(im.texture.key)!.boneLength!;
+      im.setPosition(A.x, A.y)
+        .setRotation(Math.atan2(B.y - A.y, B.x - A.x))
+        .setScale(len / (bone * PART_PX), k)
+        .setDepth(depth);
+    };
+
+    // Shadow under the feet.
+    const fb = S(sk.feet.back);
+    const ff = S(sk.feet.front);
+    this.hitterShadow
+      .clear()
+      .fillStyle(0x000000, 0.3)
+      .fillEllipse((fb.x + ff.x) / 2, Math.max(fb.y, ff.y) + 2, Math.abs(ff.x - fb.x) + place.scale * 1.6, place.scale * 0.32);
+
+    // Back leg (farther from the pitcher) is drawn first.
+    limb(P.backThigh, sk.hips.back, sk.knees.back, 2.1);
+    limb(P.backShin, sk.knees.back, sk.ankles.back, 2.11);
+    const cb = S(sk.ankles.back);
+    P.backCleat.setPosition(cb.x, cb.y)
+      .setScale(place.dir * k, k)
+      .setRotation(-sk.feet.backHeel * 0.55 * place.dir)
+      .setDepth(2.12);
+
+    // Hips, front leg, torso, head.
+    const pv = S(sk.pelvis);
+    const nk = S(sk.neck);
+    const spineAngle = Math.atan2(nk.y - pv.y, nk.x - pv.x) + Math.PI / 2;
+    const hipW = Math.min(1.12, Math.max(0.86, sk.hipSpan + 0.55));
+    P.pelvis.setPosition(pv.x, pv.y)
+      .setScale(place.dir * k * (hipW / 0.9), k)
+      .setRotation(spineAngle * 0.4)
+      .setDepth(2.2);
+
+    limb(P.frontThigh, sk.hips.front, sk.knees.front, 2.3);
+    limb(P.frontShin, sk.knees.front, sk.ankles.front, 2.31);
+    const cf = S(sk.ankles.front);
+    P.frontCleat.setPosition(cf.x, cf.y).setScale(place.dir * k, k).setRotation(0).setDepth(2.32);
+
+    const torsoLen = Math.hypot(nk.x - pv.x, nk.y - pv.y) / (place.scale * 1.72);
+    const torsoW = Math.min(1.45, Math.max(0.98, sk.shoulderSpan + 0.7));
+    P.torso.setPosition(pv.x, pv.y)
+      .setScale(place.dir * k * (torsoW / 1.32), k * torsoLen)
+      .setRotation(spineAngle)
+      .setDepth(2.4);
+
+    const hd = S(sk.head);
+    P.head.setPosition(hd.x, hd.y)
+      .setScale(place.dir * k, k)
+      .setRotation(sk.headTilt * 0.6 * place.dir)
+      .setDepth(2.5);
+
+    // Arms: a shoulder turned toward the catcher is behind the torso.
+    const backArmDepth = sk.shoulders.backW < -0.1 ? 2.15 : 2.62;
+    const frontArmDepth = sk.shoulders.frontW < -0.1 ? 2.16 : 2.64;
+    limb(P.backUpper, sk.shoulders.back, sk.elbows.back, backArmDepth);
+    limb(P.backFore, sk.elbows.back, sk.hands.top, backArmDepth + 0.005);
+    limb(P.frontUpper, sk.shoulders.front, sk.elbows.front, frontArmDepth);
+    limb(P.frontFore, sk.elbows.front, sk.hands.bottom, frontArmDepth + 0.005);
+
+    // Bat: behind the head while the barrel points back toward the catcher.
+    limb(P.bat, sk.bat.knob, sk.bat.tip, sk.bat.towardCatcher > 0.35 ? 2.45 : 2.6);
+
+    const ht = S(sk.hands.top);
+    const hb = S(sk.hands.bottom);
+    P.topGlove.setPosition(ht.x, ht.y).setScale(k).setDepth(Math.max(backArmDepth, 2.6) + 0.02);
+    P.bottomGlove.setPosition(hb.x, hb.y).setScale(k).setDepth(Math.max(frontArmDepth, 2.6) + 0.03);
   }
 
   private drawMitt(st: StageState) {
@@ -400,29 +533,6 @@ export class PitchScene extends Phaser.Scene {
 // ---------------------------------------------------------------------------
 // Drawing helpers
 // ---------------------------------------------------------------------------
-
-/** Thick round-capped stroke: stamp circles along a polyline. */
-function brush(g: Phaser.GameObjects.Graphics, pts: Pt[], width: number, color: number) {
-  g.fillStyle(color, 1);
-  const r = width / 2;
-  for (let i = 1; i < pts.length; i++) {
-    const a = pts[i - 1];
-    const b = pts[i];
-    const n = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / Math.max(1, r * 0.5)));
-    for (let k = 0; k <= n; k++) g.fillCircle(a.x + ((b.x - a.x) * k) / n, a.y + ((b.y - a.y) * k) / n, r);
-  }
-}
-
-/** Thick stroke along a quadratic curve [start, control, end]. */
-function brushCurve(g: Phaser.GameObjects.Graphics, [p0, c, p1]: Pt[], width: number, color: number) {
-  const pts: Pt[] = [];
-  for (let i = 0; i <= 16; i++) {
-    const t = i / 16;
-    const u = 1 - t;
-    pts.push({ x: u * u * p0.x + 2 * u * t * c.x + t * t * p1.x, y: u * u * p0.y + 2 * u * t * c.y + t * t * p1.y });
-  }
-  brush(g, pts, width, color);
-}
 
 function dashedPolyline(
   g: Phaser.GameObjects.Graphics,
