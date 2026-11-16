@@ -58,15 +58,16 @@ interface Pose {
   headTilt: number;
 }
 
+// Proportions of a ~6'1" position player (feet).
 export const BODY = {
-  thigh: 1.5,
-  shin: 1.42,
+  thigh: 1.45,
+  shin: 1.38,
   ankle: 0.2,
-  torso: 1.72,
-  upperArm: 1.0,
+  torso: 1.8,
+  upperArm: 1.05,
   forearm: 0.95,
-  hipHalf: 0.36,
-  shoulderHalf: 0.6,
+  hipHalf: 0.38,
+  shoulderHalf: 0.62,
   neck: 0.2,
   bat: 2.8,
 };
@@ -74,119 +75,127 @@ export const BODY = {
 const P = (u: number, v: number, w: number): V3 => ({ u, v, w });
 
 // --- Key poses ---------------------------------------------------------------
+// Reference: a relaxed, balanced pro stance. Feet a bit wider than the
+// shoulders along the line to the pitcher, knees softly flexed, hips and
+// shoulders slightly open (three-quarter view from the mound), a small
+// forward tilt at the hips, hands just above and behind the back shoulder,
+// bat tipped back about 45°.
 
 const STANCE: Pose = {
-  pelvis: P(-0.05, -2.62, 0),
-  lean: 0.2,
-  hipOpen: 0.08,
-  shOpen: 0.05,
-  grip: P(-0.42, -4.5, -0.55),
-  batYaw: -1.95,
-  batElev: 1.0,
-  front: P(0.18, 0, 1.15),
-  back: P(-0.25, 0, -1.15),
+  pelvis: P(-0.04, -2.8, 0),
+  lean: 0.15,
+  hipOpen: 0.32,
+  shOpen: 0.26,
+  grip: P(-0.36, -4.82, -0.72),
+  // Bat ~45° back over the shoulder, tilted slightly toward the catcher.
+  batYaw: -2.92,
+  batElev: 0.8,
+  front: P(0.08, 0, 0.98),
+  back: P(-0.12, 0, -0.98),
   backHeel: 0,
-  headTilt: 0,
+  headTilt: 0.04,
 };
 
+// Load: weight eases onto the back leg, hands drift back, hips coil a
+// little, and the front foot takes a short stride (toe tap).
 const LOADED: Pose = {
   ...STANCE,
-  pelvis: P(-0.22, -2.56, -0.12),
-  lean: 0.13,
-  hipOpen: -0.12,
-  shOpen: -0.16,
-  grip: P(-0.62, -4.42, -0.82),
-  batYaw: -2.15,
-  batElev: 1.12,
-  front: P(0.24, 0, 1.6),
+  pelvis: P(-0.14, -2.76, -0.1),
+  lean: 0.1,
+  hipOpen: 0.14,
+  shOpen: 0.04,
+  grip: P(-0.5, -4.76, -0.92),
+  batYaw: -2.98,
+  batElev: 0.9,
+  front: P(0.12, 0, 1.3),
 };
 
 const SLOT: Pose = {
   ...LOADED,
-  pelvis: P(0.0, -2.52, 0.05),
-  lean: 0.2,
-  hipOpen: 0.55,
-  shOpen: 0.18,
-  grip: P(-0.3, -4.0, -0.6),
+  pelvis: P(0.0, -2.78, 0.04),
+  lean: 0.16,
+  hipOpen: 0.6,
+  shOpen: 0.22,
+  grip: P(-0.3, -4.3, -0.62),
   batYaw: -2.6,
-  batElev: 0.45,
+  batElev: 0.42,
   backHeel: 0.25,
 };
 
 const CONTACT: Pose = {
   ...SLOT,
-  pelvis: P(0.18, -2.58, 0.12),
-  lean: 0.28,
-  hipOpen: 0.92,
-  shOpen: 0.7,
-  grip: P(0.22, -3.5, -0.05),
+  pelvis: P(0.14, -2.8, 0.1),
+  lean: 0.22,
+  hipOpen: 0.95,
+  shOpen: 0.72,
+  grip: P(0.2, -3.75, -0.05),
   batYaw: -0.12,
   batElev: 0.04,
-  back: P(-0.2, -0.04, -1.1),
+  back: P(-0.08, -0.04, -0.92),
   backHeel: 0.75,
-  headTilt: 0.12,
+  headTilt: 0.14,
 };
 
 const EXTEND: Pose = {
   ...CONTACT,
-  pelvis: P(0.22, -2.6, 0.14),
-  lean: 0.24,
-  hipOpen: 1.0,
+  pelvis: P(0.18, -2.82, 0.12),
+  lean: 0.2,
+  hipOpen: 1.02,
   shOpen: 1.0,
-  grip: P(0.32, -3.8, 0.45),
+  grip: P(0.3, -4.0, 0.45),
   batYaw: 0.9,
   batElev: 0.25,
-  headTilt: 0.08,
+  headTilt: 0.1,
 };
 
 const FINISH: Pose = {
   ...EXTEND,
-  pelvis: P(0.18, -2.66, 0.1),
-  lean: 0.1,
+  pelvis: P(0.14, -2.86, 0.1),
+  lean: 0.08,
   hipOpen: 1.05,
   shOpen: 1.28,
-  grip: P(-0.18, -4.85, 0.25),
+  grip: P(-0.16, -5.0, 0.25),
   batYaw: 3.35,
   batElev: 0.95,
   backHeel: 0.9,
-  headTilt: 0,
+  headTilt: 0.02,
 };
 
 // A whiff: same path, but the barrel is under the ball, he over-rotates
 // and finishes lower and off balance.
-const MISS_CONTACT: Pose = { ...CONTACT, grip: P(0.25, -3.35, -0.05), batElev: -0.08, headTilt: 0.2 };
+const MISS_CONTACT: Pose = { ...CONTACT, grip: P(0.24, -3.6, -0.05), batElev: -0.08, headTilt: 0.22 };
 const MISS_FINISH: Pose = {
   ...FINISH,
-  pelvis: P(0.26, -2.5, 0.18),
-  lean: 0.36,
+  pelvis: P(0.22, -2.74, 0.16),
+  lean: 0.3,
   shOpen: 1.18,
-  grip: P(0.05, -4.25, 0.45),
+  grip: P(0.05, -4.45, 0.45),
   batYaw: 2.9,
   batElev: 0.45,
   headTilt: 0.25,
 };
 
-// Taking a pitch: stride lands, hands stay loaded, weight stays back.
+// Taking a pitch: stride lands, hands stay back, weight stays centered.
 const TAKE: Pose = {
   ...LOADED,
-  pelvis: P(-0.12, -2.6, -0.02),
+  pelvis: P(-0.08, -2.79, -0.02),
   lean: 0.1,
-  hipOpen: 0.05,
-  shOpen: -0.05,
-  grip: P(-0.55, -4.48, -0.7),
-  batElev: 1.18,
+  hipOpen: 0.26,
+  shOpen: 0.14,
+  grip: P(-0.44, -4.82, -0.84),
+  batElev: 0.92,
 };
 
 // Bailing out on an inside pitch: turn away, drop the hands, duck.
 const FLINCH: Pose = {
   ...STANCE,
-  pelvis: P(-0.42, -2.42, -0.2),
+  pelvis: P(-0.36, -2.66, -0.2),
   lean: -0.22,
-  hipOpen: -0.3,
-  shOpen: -0.45,
-  grip: P(-0.75, -4.0, -0.9),
+  hipOpen: -0.2,
+  shOpen: -0.4,
+  grip: P(-0.7, -4.2, -0.9),
   batYaw: -2.4,
-  batElev: 1.3,
+  batElev: 1.25,
   headTilt: -0.35,
 };
 
@@ -228,7 +237,7 @@ function poseFor(m: HitterMotion, timeMs: number): Pose {
   // Load: hands go back, weight shifts back, front foot lifts and strides.
   const load = clamp01(m.load);
   let pose = mix(STANCE, LOADED, smooth(load));
-  const lift = Math.sin(Math.min(1, load * 1.15) * Math.PI) * 0.32;
+  const lift = Math.sin(Math.min(1, load * 1.15) * Math.PI) * 0.2;
   pose = { ...pose, front: { ...pose.front, v: pose.front.v - lift } };
 
   if ((m.mode === "contact" || m.mode === "miss") && m.swing > 0) {

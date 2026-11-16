@@ -72,7 +72,7 @@ function capsule(len: number, r0: number, r1: number) {
 function thigh(): PartTexture {
   const len = BODY.thigh;
   return part("h-thigh", { x: -0.28, y: -0.28, w: len + 0.5, h: 0.56 }, [
-    h("path", { key: "p", d: capsule(len, 0.27, 0.2), fill: "url(#pantsT)", stroke: C.pantsShade, strokeWidth: 0.015 }),
+    h("path", { key: "p", d: capsule(len, 0.26, 0.19), fill: "url(#pantsT)", stroke: C.pantsShade, strokeWidth: 0.015 }),
     h("path", { key: "s", d: `M0,-0.1 L${len},-0.07`, stroke: C.navy, strokeWidth: 0.045 }),
   ], [limbShade("pantsT", C.pants, C.pantsShade)], len);
 }
@@ -92,9 +92,9 @@ function shin(): PartTexture {
 function upperArm(): PartTexture {
   const len = BODY.upperArm;
   return part("h-upper", { x: -0.2, y: -0.2, w: len + 0.38, h: 0.4 }, [
-    h("path", { key: "u", d: capsule(len, 0.17, 0.14), fill: "url(#under)" }),
+    h("path", { key: "u", d: capsule(len, 0.19, 0.15), fill: "url(#under)" }),
     // Short jersey sleeve with piping.
-    h("path", { key: "sl", d: `M-0.03,-0.2 L0.46,-0.18 L0.46,0.18 L-0.03,0.2 A0.2,0.2 0 0 1 -0.03,-0.2 Z`, fill: "url(#sleeve)" }),
+    h("path", { key: "sl", d: `M-0.03,-0.22 L0.46,-0.2 L0.46,0.2 L-0.03,0.22 A0.22,0.22 0 0 1 -0.03,-0.22 Z`, fill: "url(#sleeve)" }),
     h("rect", { key: "pp", x: 0.4, y: -0.18, width: 0.05, height: 0.36, fill: C.navy }),
   ], [limbShade("under", C.navyHi, C.navy), limbShade("sleeve", C.jersey, C.jerseyShade)], len);
 }
@@ -102,7 +102,7 @@ function upperArm(): PartTexture {
 function forearm(): PartTexture {
   const len = BODY.forearm;
   return part("h-fore", { x: -0.16, y: -0.16, w: len + 0.3, h: 0.32 }, [
-    h("path", { key: "f", d: capsule(len, 0.14, 0.11), fill: "url(#underF)" }),
+    h("path", { key: "f", d: capsule(len, 0.155, 0.12), fill: "url(#underF)" }),
     h("rect", { key: "wb", x: len - 0.16, y: -0.12, width: 0.12, height: 0.24, rx: 0.03, fill: "#f4f5f7" }),
   ], [limbShade("underF", C.navyHi, C.navy)], len);
 }

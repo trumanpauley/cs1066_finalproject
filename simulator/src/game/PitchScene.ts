@@ -12,7 +12,7 @@ import Phaser from "phaser";
 import { zoneBounds, type HitterProfile, type Location } from "../engine";
 import { hitterPlacement, mittScreen } from "../ui/figures";
 import { buildHitterParts, PART_PX, type PartTexture } from "../ui/hitterArt";
-import { hitterSkeleton, type HitterMotion, type Pt } from "../ui/hitterRig";
+import { BODY, hitterSkeleton, type HitterMotion, type Pt } from "../ui/hitterRig";
 import { project, unprojectAtPlate, VIEW_H, VIEW_W } from "../ui/projection";
 import { CALL_COLORS, type PitchFx, type PitchTrail, type StageState } from "../ui/sceneTypes";
 import { buildSvgTextures, MITT_TEX_R, svgDataUrl, TEXTURE_RES } from "../ui/textures";
@@ -274,7 +274,7 @@ export class PitchScene extends Phaser.Scene {
     const cf = S(sk.ankles.front);
     P.frontCleat.setPosition(cf.x, cf.y).setScale(place.dir * k, k).setRotation(0).setDepth(2.32);
 
-    const torsoLen = Math.hypot(nk.x - pv.x, nk.y - pv.y) / (place.scale * 1.72);
+    const torsoLen = Math.hypot(nk.x - pv.x, nk.y - pv.y) / (place.scale * BODY.torso);
     const torsoW = Math.min(1.45, Math.max(0.98, sk.shoulderSpan + 0.7));
     P.torso.setPosition(pv.x, pv.y)
       .setScale(place.dir * k * (torsoW / 1.32), k * torsoLen)
@@ -283,7 +283,7 @@ export class PitchScene extends Phaser.Scene {
 
     const hd = S(sk.head);
     P.head.setPosition(hd.x, hd.y)
-      .setScale(place.dir * k, k)
+      .setScale(place.dir * k * 1.06, k * 1.06)
       .setRotation(sk.headTilt * 0.6 * place.dir)
       .setDepth(2.5);
 
