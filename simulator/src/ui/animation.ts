@@ -44,6 +44,8 @@ export interface Frame {
   ball: ScreenBall | null;
   /** Where the same pitch would go with no spin-induced movement. */
   ghost: ScreenBall | null;
+  /** The ball's shadow on the ground (stadium lights straight overhead). */
+  shadow: { sx: number; sy: number; rx: number; alpha: number } | null;
   trail: { sx: number; sy: number }[];
   swing: number;
   flinch: number;
@@ -127,6 +129,13 @@ function toScreen(w: Vec) {
 }
 
 const ballScreen = (anim: PitchAnimation, t: number) => toScreen(ballWorld(anim, t));
+
+function shadowAt(anim: PitchAnimation, t: number) {
+  const w = ballWorld(anim, t);
+  const p = project(w.x, w.y, 0);
+  // Softer and fainter the higher the ball is.
+  return { sx: p.sx, sy: p.sy, rx: 0.16 * p.scale, alpha: Math.max(0.12, 0.45 - w.z * 0.05) };
+}
 const ghostScreen = (anim: PitchAnimation, t: number) => toScreen(ghostWorld(anim, t));
 
 export interface FlightPaths {
@@ -162,6 +171,7 @@ export function frameAt(anim: PitchAnimation, elapsed: number): Frame {
   const frame: Frame = {
     ball: null,
     ghost: null,
+    shadow: null,
     trail: [],
     swing: 0,
     flinch: 0,
@@ -194,6 +204,7 @@ export function frameAt(anim: PitchAnimation, elapsed: number): Frame {
     const k = elapsed / flightStart;
     frame.ball = { ...s, opacity: k * 0.9 };
     frame.ghost = { ...s, opacity: k * 0.5 };
+    frame.shadow = { ...shadowAt(anim, VISIBLE_FROM), alpha: shadowAt(anim, VISIBLE_FROM).alpha * k };
     return frame;
   }
 
@@ -202,6 +213,7 @@ export function frameAt(anim: PitchAnimation, elapsed: number): Frame {
     const s = ballScreen(anim, t);
     frame.ball = { ...s, opacity: 1 };
     frame.ghost = { ...ghostScreen(anim, t), opacity: 0.55 };
+    frame.shadow = shadowAt(anim, t);
     for (const dt of [0.03, 0.06, 0.09]) {
       if (t - dt > VISIBLE_FROM) {
         const tr = ballScreen(anim, t - dt);

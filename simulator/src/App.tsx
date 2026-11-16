@@ -13,7 +13,11 @@ import { flightPaths, frameAt, makeAnimation, releaseOf, type Frame, type PitchA
 import { pitchColor, totalBreak } from "./ui/pitchStyle";
 import { setCameraHeight } from "./ui/projection";
 import { BoxScore, PitchMenu, ResultBanner, Scoreboard, type BoxEntry } from "./ui/Hud";
-import { Scene, type PitchMarker, type PitchTrail } from "./ui/Scene";
+import { PhaserStage } from "./game/PhaserStage";
+import type { PitchFx, PitchMarker, PitchTrail } from "./ui/sceneTypes";
+
+/** Replays run at this fraction of the (already slowed) pitch speed. */
+const REPLAY_SPEED = 0.35;
 
 declare global {
   interface Window {
@@ -54,6 +58,12 @@ export default function App() {
   const [showWhy, setShowWhy] = useState(false);
   const [frame, setFrame] = useState<Frame | null>(null);
   const pending = useRef<{ anim: PitchAnimation & { hitterName: string }; next: AtBatState } | null>(null);
+  // The last pitch's animation, kept for slow-motion replays.
+  const lastAnim = useRef<PitchAnimation | null>(null);
+  const [replays, setReplays] = useState(0);
+  // Counts every pitch thrown this session (gives each pitch's effects an id).
+  const [pitchSerial, setPitchSerial] = useState(0);
+  const [replaying, setReplaying] = useState(false);
 
   // --- animation loop -------------------------------------------------------
   useEffect(() => {
@@ -80,6 +90,7 @@ export default function App() {
           setBox((b) => [...b, { hitter: anim.hitterName, result, pitches: next.pitches.length }]);
         }
         setLast(anim.outcome);
+        lastAnim.current = anim;
         setPhase(next.result ? "done" : "aiming");
         return;
       }
@@ -89,13 +100,39 @@ export default function App() {
     return () => cancelAnimationFrame(raf);
   }, [phase]);
 
+  // --- slow-motion replay of the last pitch ---------------------------------
+  useEffect(() => {
+    const anim = lastAnim.current;
+    if (!replaying || !anim) return;
+    let raf = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const f = frameAt(anim, (now - start) * REPLAY_SPEED);
+      setFrame(f);
+      if (f.done) {
+        setReplaying(false);
+        return;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [replaying]);
+
+  const replay = useCallback(() => {
+    if (phase === "pitching" || replaying || !lastAnim.current) return;
+    setReplays((n) => n + 1);
+    setReplaying(true);
+  }, [phase, replaying]);
+
   const throwIt = useCallback(() => {
-    if (phase !== "aiming" || !target) return;
+    if (phase !== "aiming" || !target || replaying) return;
     const { state, outcome } = throwPitch(atBat, { pitchCode, target }, pitcher, hitter, rng);
     pending.current = { anim: { ...makeAnimation(outcome, pitcher, rng.next()), hitterName: hitter.name }, next: state };
     setLast(null);
+    setPitchSerial((n) => n + 1);
     setPhase("pitching");
-  }, [phase, target, atBat, pitchCode, pitcher, hitter, rng]);
+  }, [phase, target, atBat, pitchCode, pitcher, hitter, rng, replaying]);
 
   /** Start a plate appearance; three outs retire the side and clear the box. */
   const startAtBat = useCallback(
@@ -106,6 +143,8 @@ export default function App() {
       if (!keepOuts || sideRetired) setBox([]);
       setTrails([]);
       setLast(null);
+      lastAnim.current = null;
+      setReplaying(false);
       setFrame(null);
       setPhase("aiming");
     },
@@ -122,6 +161,7 @@ export default function App() {
       if (e.target instanceof HTMLSelectElement) return;
       const n = Number(e.key);
       if (n >= 1 && n <= pitcher.pitches.length) setPitchCode(pitcher.pitches[n - 1].code);
+      if (e.key === "r" || e.key === "R") replay();
       if (e.key === " " || e.key === "Enter") {
         e.preventDefault();
         if (phase === "done") nextBatter();
@@ -130,7 +170,7 @@ export default function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [pitcher, phase, throwIt, nextBatter]);
+  }, [pitcher, phase, throwIt, nextBatter, replay]);
 
   const markers: PitchMarker[] = atBat.pitches.map((p, i) => ({
     n: i + 1,
@@ -139,6 +179,18 @@ export default function App() {
   }));
 
   const lastDef = last ? pitcher.pitches.find((p) => p.code === last.pitch.code) : undefined;
+
+  // The pitch the stage is showing (in flight, or being replayed).
+  const shown = phase === "pitching" ? pending.current?.anim : replaying ? lastAnim.current : null;
+  const fx: PitchFx | null = shown
+    ? {
+        id: `${pitchSerial}-${replaying ? `replay${replays}` : "live"}`,
+        call: shown.outcome.call,
+        perceivedVelocity: shown.outcome.pitch.perceivedVelocity,
+        actual: shown.outcome.pitch.actual,
+        battedBallType: shown.outcome.battedBall?.type,
+      }
+    : null;
   const result = atBat.result;
   const isOut = result ? OUT_RESULTS.includes(result) : false;
   const sideRetired = atBat.outs >= 3;
@@ -157,20 +209,22 @@ export default function App() {
       <BoxScore entries={box} isOut={(r) => OUT_RESULTS.includes(r)} />
 
       <div className="stage">
-        <Scene
+        <PhaserStage
           hitter={hitter}
           target={target}
-          aiming={phase === "aiming"}
-          frame={phase === "aiming" ? null : frame}
+          aiming={phase === "aiming" && !replaying}
+          frame={phase === "aiming" && !replaying ? null : frame}
           markers={markers}
-          trails={trails}
-          flightColor={pending.current ? pitchColor(pending.current.anim.def.code) : undefined}
+          trails={replaying ? trails.slice(0, -1) : trails}
+          flightColor={shown ? pitchColor(shown.def.code) : undefined}
+          fx={fx}
           onAim={setTarget}
         />
+        {replaying && <div className="replay-tag">Replay · slow motion</div>}
         {phase === "aiming" && !target && atBat.pitches.length === 0 && (
           <div className="hint">Pick a pitch, then click where you want to locate it.</div>
         )}
-        {phase === "done" && result && last && (
+        {phase === "done" && result && last && !replaying && (
           <div className="overlay">
             <div className={`final ${isOut ? "final-out" : "final-safe"}`}>
               <span className="final-label">
@@ -207,14 +261,18 @@ export default function App() {
         outcome={last}
         pitchDef={lastDef}
         releaseHeight={lastDef ? releaseOf(lastDef, pitcher).z : undefined}
-        sourceLabel={hitter.source.label} showWhy={showWhy} onToggleWhy={() => setShowWhy((v) => !v)} />
+        sourceLabel={hitter.source.label}
+        showWhy={showWhy}
+        onToggleWhy={() => setShowWhy((v) => !v)}
+        onReplay={lastAnim.current && !replaying && phase !== "pitching" ? replay : undefined}
+      />
 
       <PitchMenu
         pitches={pitcher.pitches}
         selected={pitchCode}
         onSelect={setPitchCode}
         onThrow={throwIt}
-        canThrow={phase === "aiming" && !!target}
+        canThrow={phase === "aiming" && !!target && !replaying}
         hasTarget={!!target}
       />
       <footer className="foot">

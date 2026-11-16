@@ -1,5 +1,5 @@
 import type { AtBatState, DataSource, HitterProfile, PitchDefinition, PitchOutcome, PlateAppearanceResult } from "../engine";
-import { CALL_COLORS } from "./Scene";
+import { CALL_COLORS } from "./sceneTypes";
 import { describeMovement, pitchColor } from "./pitchStyle";
 
 function Dots({ label, n, max, color }: { label: string; n: number; max: number; color: string }) {
@@ -115,10 +115,12 @@ interface ResultProps {
   releaseHeight?: number;
   sourceLabel: string;
   showWhy: boolean;
+  /** Present when a slow-motion replay of the last pitch is available. */
+  onReplay?: () => void;
   onToggleWhy: () => void;
 }
 
-export function ResultBanner({ outcome, pitchDef, releaseHeight, sourceLabel, showWhy, onToggleWhy }: ResultProps) {
+export function ResultBanner({ outcome, pitchDef, releaseHeight, sourceLabel, showWhy, onToggleWhy, onReplay }: ResultProps) {
   if (!outcome) return null;
   const color = CALL_COLORS[outcome.call];
   const bb = outcome.battedBall;
@@ -128,6 +130,11 @@ export function ResultBanner({ outcome, pitchDef, releaseHeight, sourceLabel, sh
         <span className="result-dot" style={{ background: color }} />
         <strong>{outcome.headline}</strong>
         <span className="result-desc">{outcome.description}</span>
+        {onReplay && (
+          <button className="link" onClick={onReplay} title="Slow-motion replay (R)">
+            Replay
+          </button>
+        )}
         <button className="link" onClick={onToggleWhy}>
           {showWhy ? "Hide" : "Why?"}
         </button>

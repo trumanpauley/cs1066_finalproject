@@ -87,6 +87,13 @@ data load through `simulator/src/data/loaders.ts`, which validates profiles
 and can accept data injected by the app (`window.PITCHIQ_DATA`) — the plug-in
 point for scouting-report or API data in later phases.
 
+The field and pitch animation are rendered with **Phaser 4** (WebGL): ball
+glow and ground shadow, mitt-pop dust, contact sparks, dirt, camera shake on
+95+ mph fastballs, and a slow-motion **Replay** (key `R`). Static art (field,
+crowd, catcher, hitter) is vector SVG turned into Phaser textures
+(`simulator/src/ui/textures.ts`); the scene lives in `simulator/src/game/`.
+React keeps the scoreboard, pitch menu, and result panel.
+
 The simulator is a Vite + React + TypeScript app compiled to one HTML file,
 `pitchiq/static/simulator.html`, which is committed so the Streamlit app runs
 without Node. To work on it (Node 20+):
@@ -147,7 +154,8 @@ pitchiq/
 simulator/                    # Pitch Simulator source (Vite + React + TS)
 ├── src/engine/               # Simulation engine + Vitest tests (no UI code)
 ├── src/data/                 # Sample pitcher/hitters (synthetic) + loaders
-└── src/ui/                   # SVG scene, animation, HUD
+├── src/game/                 # Phaser scene + React host
+└── src/ui/                   # Flight math, projection, textures, HUD
 tests/
 └── test_extraction.py        # Extraction vs. original-PDF value tests
 ```
