@@ -13,20 +13,34 @@ Every pitch is simulated in the browser — no server round-trips or LLM calls.
 
 from __future__ import annotations
 
+import html
 import json
+import re
 from pathlib import Path
 
 import streamlit as st
 
 from pitchiq.mlb import sources
+from pitchiq.mlb.game_plan import build_game_plan
 from pitchiq.mlb.hitter_profile import hand_code
 from pitchiq.mlb.sim_profile import simulator_hitter, simulator_pitcher
 from pitchiq.state import profile_complete
-from pitchiq.ui.hitter_card import CURRENT_SEASON, get_profile
+# The side panel reuses the Scout page's report pieces so both stay identical.
+from pitchiq.ui.hitter_card import (
+    CURRENT_SEASON,
+    GLOSSARY,
+    _arsenal_row,
+    _pct,
+    _tendency_rows,
+    get_profile,
+)
 
 _BUILD = Path(__file__).resolve().parent.parent / "static" / "simulator.html"
-_HEIGHT = 1000
+_HEIGHT = 1060
 DEFAULT_TEAM_ID = 158  # Milwaukee Brewers, same default as Team Matchup
+# MLB's public headshot images; unknown ids fall back to a generic silhouette.
+HEADSHOT_URL = ("https://img.mlbstatic.com/mlb-photos/image/upload/"
+                "d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/{id}/headshot/67/current")
 
 
 @st.cache_data(ttl=12 * 3600, show_spinner=False)
@@ -46,6 +60,10 @@ def _load_build(mtime: float) -> str:
 
 
 def render_simulator() -> None:
+    # Wide layout on this page only: the game plus the scouting panel beside
+    # it. styles.py caps .block-container at 880px app-wide, so lift it here.
+    st.set_page_config(layout="wide")
+    st.markdown("<style>.block-container { max-width: 1340px; }</style>", unsafe_allow_html=True)
     st.markdown("## Simulate")
     st.caption(
         "Face a lineup batter by batter. Pick a pitch, click where to aim, and throw — "
@@ -69,7 +87,9 @@ def render_simulator() -> None:
 
     lineup = _lineup_picker(hand)
     # The scoreboard is narrow: show "MIL", not "Milwaukee Brewers".
-    data = {"hitters": lineup["hitters"] if lineup else [], "team": lineup.get("abbr", "") if lineup else ""}
+    data = {"hitters": _with_reports(lineup, hand) if lineup else [],
+            "team": lineup.get("abbr", "") if lineup else "",
+            "glossary": GLOSSARY}
     if pitcher:
         data["pitcher"] = pitcher
     if lineup and lineup.get("failed"):
@@ -123,16 +143,87 @@ def _lineup_picker(hand: str) -> dict | None:
 
 
 def _load(team_id: int, team_name: str, season: int, hand: str, hitters: list[dict]) -> dict:
-    loaded, failed = [], []
+    loaded, players, failed = [], [], []
     with st.status(f"Loading {len(hitters)} hitters from Baseball Savant…", expanded=False) as status:
         for i, h in enumerate(hitters, 1):
             status.update(label=f"Loading {h['name']} ({i}/{len(hitters)})…")
             try:
                 loaded.append(simulator_hitter(get_profile(h, season, hand), season))
+                players.append(h)
             except Exception as exc:
                 failed.append(f"{h['name']} ({exc})")
         status.update(label=f"Loaded {len(loaded)} hitters", state="complete")
-    return {"team_id": team_id, "team": team_name, "hand": hand, "hitters": loaded, "failed": failed}
+    return {"team_id": team_id, "team": team_name, "hand": hand, "season": season,
+            "hitters": loaded, "players": players, "failed": failed}
+
+
+def _with_reports(lineup: dict, hand: str) -> list[dict]:
+    """Add each hitter's headshot and Scout-page report (built from the
+    current My Arsenal, so edits there show up without reloading)."""
+    players = lineup.get("players") or []
+    season = lineup.get("season", CURRENT_SEASON)
+    arsenal = st.session_state.arsenal if st.session_state.throwing_hand else []
+    out = []
+    for i, sim in enumerate(lineup["hitters"]):
+        sim = dict(sim)
+        if i < len(players):
+            player = players[i]
+            sim["photo"] = HEADSHOT_URL.format(id=int(player["id"]))
+            try:
+                sim["report"] = scout_report(get_profile(player, season, hand), arsenal)
+            except Exception:  # a missing report shouldn't break the game
+                pass
+        out.append(sim)
+    return out
+
+
+_DETAIL_LINE = re.compile(r"^\s*<b>(.*?)</b>\s*(.*)$", re.S)
+
+
+def _plain(text: str) -> str:
+    """Game-plan text without its HTML tags."""
+    return html.unescape(re.sub(r"<[^>]+>", "", text)).strip()
+
+
+def scout_report(profile: dict, arsenal: list[dict]) -> dict:
+    """The Scout page's hitter card as data for the simulator's side panel."""
+    card = build_game_plan(profile, arsenal)
+    hand_label = f"{profile['pitcher_hand']}HP"
+    recs = card["recommendations"]
+    detailed = []
+    for line in recs["Detailed"].split("<br>"):
+        m = _DETAIL_LINE.match(line)
+        if m:
+            detailed.append({"label": _plain(m.group(1)).rstrip(":"), "text": _plain(m.group(2))})
+        elif _plain(line):
+            detailed.append({"label": "", "text": _plain(line)})
+    o = profile["overall"]
+    x = profile["xwoba"]
+    bats = card["bats"] if card["bats"] != "S" else f"S (hits {card['stand']} vs {hand_label})"
+    return {
+        "number": str(profile.get("number") or ""),
+        "meta": " · ".join(v for v in (profile.get("position", ""), profile.get("team", "")) if v),
+        "bats": bats,
+        "threat": card["threat"],
+        "handLabel": hand_label,
+        "summary": _plain(card["summary"]),
+        "quick": _plain(recs["Quick"]),
+        "standard": _plain(recs["Standard"]),
+        "detailed": detailed,
+        "hasArsenal": bool(arsenal),
+        "metrics": [
+            {"label": f"PA vs {hand_label}", "value": str(profile["pa"])},
+            {"label": "xwOBA", "value": f"{x:.3f}".lstrip("0") if x is not None else "—"},
+            {"label": "K%", "value": _pct(profile["k_pct"])},
+            {"label": "BB%", "value": _pct(profile["bb_pct"])},
+            {"label": "Chase%", "value": _pct(o["chase_pct"])},
+            {"label": "Whiff%", "value": _pct(o["whiff_pct"])},
+        ],
+        "arsenalRows": [_arsenal_row(m, full=False) for m in card["matchups"]],
+        "arsenalRowsFull": [_arsenal_row(m, full=True) for m in card["matchups"]],
+        "tendencyRows": _tendency_rows(profile),
+        "defaultDepth": st.session_state.get("analysis_mode", "Standard"),
+    }
 
 
 def _with_data(page: str, data: dict) -> str:

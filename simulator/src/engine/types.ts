@@ -120,6 +120,10 @@ export interface HitterProfile {
   number?: string;
   position?: string;
   team?: string;
+  /** Headshot image URL (real players only). */
+  photo?: string;
+  /** PitchIQ scouting report for the side panel (display only — the engine ignores it). */
+  report?: ScoutReport;
 }
 
 // ---------------------------------------------------------------------------
@@ -220,4 +224,29 @@ export interface AtBatState {
 export interface PitchInput {
   pitchCode: string;
   target: Location;
+}
+
+// ---------------------------------------------------------------------------
+// Scouting report (same content as the Scout page's hitter card)
+// ---------------------------------------------------------------------------
+
+export type ReportDepth = "Quick" | "Standard" | "Detailed";
+export type ReportRow = Record<string, string | number | null>;
+
+export interface ScoutReport {
+  number: string;
+  meta: string;
+  bats: string;
+  threat: "High" | "Medium" | "Low";
+  handLabel: string;
+  summary: string;
+  quick: string;
+  standard: string;
+  detailed: { label: string; text: string }[];
+  hasArsenal: boolean;
+  metrics: { label: string; value: string }[];
+  arsenalRows: ReportRow[];
+  arsenalRowsFull: ReportRow[];
+  tendencyRows: ReportRow[];
+  defaultDepth?: ReportDepth;
 }

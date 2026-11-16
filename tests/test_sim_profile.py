@@ -148,3 +148,25 @@ def test_rebuilding_from_reports_keeps_typed_release():
                                         "usage_pct": 100, "ivb": 1, "hb": -6, "extension_in": 72}}}
     merged = merge_into_arsenal(arsenal, combined)
     assert merged[0]["extension_in"] == 80.0 and merged[0]["release_height_in"] == 70.0
+
+
+def test_scout_report_matches_scout_page_content():
+    from pitchiq.mlb.game_plan import build_game_plan
+    from pitchiq.ui.simulator import scout_report
+
+    profile = build_profile(pd.DataFrame(chaser_rows()), "R", "Test Hitter", 123)
+    profile.update(number="7", position="SS", team="MIL")
+    arsenal = [{"pitch": "Fastball (4-Seam)", "usage_pct": 60}, {"pitch": "Slider", "usage_pct": 40}]
+    r = scout_report(profile, arsenal)
+    card = build_game_plan(profile, arsenal)
+
+    assert r["threat"] == card["threat"] and r["number"] == "7" and r["meta"] == "SS · MIL"
+    assert r["quick"] == card["recommendations"]["Quick"]
+    assert "<" not in r["standard"] and "<" not in r["summary"]
+    # Detailed plan arrives as labeled lines ("0-0", "Two strikes", ...), no HTML.
+    labels = [line["label"] for line in r["detailed"]]
+    assert "0-0" in labels and "Two strikes" in labels
+    assert all("<" not in line["text"] for line in r["detailed"])
+    assert [row["Your pitch"] for row in r["arsenalRows"]] == ["Fastball (4-Seam)", "Slider"]
+    assert len(r["metrics"]) == 6 and r["hasArsenal"]
+    json.dumps(r)  # the payload must be JSON-serializable for the simulator

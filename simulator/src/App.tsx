@@ -14,6 +14,7 @@ import { pitchColor, totalBreak } from "./ui/pitchStyle";
 import { setCameraHeight } from "./ui/projection";
 import { BoxScore, PitchMenu, ResultBanner, Scoreboard, type BoxEntry } from "./ui/Hud";
 import { PhaserStage } from "./game/PhaserStage";
+import { ScoutPanel } from "./ui/ScoutPanel";
 import type { PitchFx, PitchMarker, PitchTrail } from "./ui/sceneTypes";
 
 /** Replays run at this fraction of the (already slowed) pitch speed. */
@@ -196,6 +197,7 @@ export default function App() {
   const sideRetired = atBat.outs >= 3;
 
   return (
+    <div className="layout">
     <div className="app">
       <Scoreboard
         hitters={lineup}
@@ -279,6 +281,8 @@ export default function App() {
         {pitcher.name} ({pitcher.hand}HP) · {hitter.blurb ? `${hitter.name} ${hitter.blurb} · ` : ""}
         {hitter.source.label}
       </footer>
+    </div>
+    <ScoutPanel hitter={hitter} glossary={data.glossary} />
     </div>
   );
 }

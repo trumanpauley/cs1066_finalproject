@@ -17,6 +17,8 @@ export interface SimulatorData {
   hitters: HitterProfile[];
   /** Opponent name when hitters come from a team lineup. */
   team?: string;
+  /** Stat definitions shown under the scouting report. */
+  glossary?: string;
 }
 
 declare global {
@@ -72,6 +74,6 @@ export function loadSimulatorData(): SimulatorData {
   });
 
   return lineup.length
-    ? { pitcher, hitters: lineup, team: injected?.team || undefined }
+    ? { pitcher, hitters: lineup, team: injected?.team || undefined, glossary: injected?.glossary }
     : { pitcher, hitters: sampleHitters as HitterProfile[] };
 }
