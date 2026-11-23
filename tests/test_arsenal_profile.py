@@ -1,6 +1,6 @@
-"""Tests for combining outings, the saved profile, and the RAG knowledge documents.
+"""Tests for combining outings and the saved profile.
 
-Run with:  python -m pytest tests/test_arsenal_knowledge.py -v
+Run with:  python -m pytest tests/test_arsenal_profile.py -v
 """
 
 from __future__ import annotations
@@ -10,7 +10,6 @@ from pathlib import Path
 import pytest
 
 from pitchiq.arsenal import combine_outings, merge_into_arsenal, outing_sort_key
-from pitchiq.knowledge import build_chunks, chunk_text, pitcher_documents
 from pitchiq.profile_store import content_id, delete_upload, load_profile, save_profile, save_upload
 
 REPORT_DIR = Path(__file__).parent.parent / "journals" / "Scouting_Reports"
@@ -135,61 +134,6 @@ def test_profile_round_trip_and_uploads(tmp_path):
 
 def test_load_profile_missing_file(tmp_path):
     assert load_profile(base=tmp_path / "nothing-here") == {}
-
-
-# --- knowledge documents ----------------------------------------------------------------
-
-def _profile():
-    arsenal = merge_into_arsenal([], combine_outings([OUTING_A, OUTING_B]))
-    arsenal[1]["notes"] = "Start it at the hip of a righty."
-    arsenal[1]["plan_vs_lhh"] = "Back-foot with two strikes."
-    return {"pitcher_name": "Test Pitcher", "throwing_hand": "Right (RHP)", "arsenal": arsenal,
-            "strengths": "Sweeper", "weaknesses": "", "preferences": "", "approach": "Get ahead early.",
-            "outings": [OUTING_A, OUTING_B],
-            "notes_docs": [{"id": "n1", "filename": "coach.txt", "text": "Elevate fastballs.", "added": "2026-11-05"}]}
-
-
-def test_pitcher_documents_cover_everything_with_stable_ids():
-    docs = pitcher_documents(_profile())
-    ids = [d.id for d in docs]
-    assert ids == ["pitcher:overview", "pitch:Fastball (4-Seam)", "pitch:Sweeper", "pitch:Cutter",
-                   "outing:a", "outing:b", "note:n1"]
-    sweeper = docs[2].text
-    # Self-contained: names the pitcher and pitch, includes report numbers and the pitcher's words.
-    assert "Test Pitcher's Sweeper" in sweeper
-    assert "whiff rate 67%" in sweeper
-    assert "How I throw it: Start it at the hip of a righty." in sweeper
-    assert "Plan vs left-handed hitters: Back-foot with two strikes." in sweeper
-    overview = docs[0].text
-    assert "How I attack hitters (in Test Pitcher's words): Get ahead early." in overview
-    assert "Race to 2 strikes: 58% (15/26)" in overview
-    assert docs[2].metadata == {"pitcher": "Test Pitcher", "hand": "Right (RHP)", "pitch": "Sweeper"}
-
-
-def test_empty_profile_still_builds_an_overview():
-    docs = pitcher_documents({})
-    assert [d.kind for d in docs] == ["pitcher_overview"]
-
-
-def test_chunk_text_respects_size_and_overlaps():
-    text = "\n\n".join(f"Paragraph {i}. " + "word " * 60 for i in range(10))
-    chunks = chunk_text(text, max_chars=400, overlap=80)
-    assert len(chunks) > 1
-    assert all(len(c) <= 400 for c in chunks)
-    assert all(f"Paragraph {i}." in text for i in range(10))
-    # every paragraph label survives somewhere
-    assert all(any(f"Paragraph {i}." in c for c in chunks) for i in range(10))
-    assert chunk_text("short") == ["short"]
-    assert chunk_text("   ") == []
-
-
-def test_build_chunks_ids_and_metadata():
-    docs = pitcher_documents(_profile())
-    chunks = build_chunks(docs, max_chars=200)
-    assert len(chunks) > len(docs)  # long docs were split
-    assert all(c.id.startswith(c.doc_id + "#") for c in chunks)
-    sweeper_chunks = [c for c in chunks if c.doc_id == "pitch:Sweeper"]
-    assert all(c.metadata["pitch"] == "Sweeper" for c in sweeper_chunks)
 
 
 # --- real reports (skipped without the confidential PDFs) ---------------------------------

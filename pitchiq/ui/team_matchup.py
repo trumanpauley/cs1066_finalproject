@@ -1,4 +1,4 @@
-"""Team Matchup page: a game plan for every hitter on one MLB team (series prep)."""
+"""Game Plan page (home): a plan for every hitter on one MLB team, then practice it in Simulate."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ from pitchiq.config import ANALYSIS_MODES
 from pitchiq.mlb import sources
 from pitchiq.mlb.game_plan import threat_level
 from pitchiq.mlb.hitter_profile import hand_code
+from pitchiq.navigation import PAGES
 from pitchiq.state import profile_complete
 from pitchiq.ui.hitter_card import CURRENT_SEASON, GLOSSARY, get_profile, render_hitter_card
 
@@ -26,14 +27,18 @@ def _roster(team_id: int, season: int) -> list[dict]:
 
 
 def render_team_matchup() -> None:
-    st.markdown("## Team Matchup")
-    st.caption("Prep for a series: a plan for every hitter on the roster, "
-               "ordered from most to least dangerous.")
+    st.markdown("## Game Plan")
+    st.caption("Pick your opponent: get a plan for every hitter, ordered from most to "
+               "least dangerous, then practice it against them in **Simulate**.")
 
-    if not profile_complete():
-        st.info("Set your throwing hand and add at least one pitch on **My Arsenal** first.")
-        return
-    hand = hand_code(st.session_state.throwing_hand)
+    if profile_complete():
+        hand = hand_code(st.session_state.throwing_hand)
+    else:
+        st.info("No arsenal on **My Arsenal** yet — plans show each hitter's tendencies only. "
+                "Add your pitches to get pitch-by-pitch recommendations.")
+        picked = st.segmented_control("Facing", ["vs RHP", "vs LHP"], default="vs RHP",
+                                      key="team_hand", label_visibility="collapsed")
+        hand = "L" if picked == "vs LHP" else "R"
     season = CURRENT_SEASON
 
     try:
@@ -60,6 +65,8 @@ def render_team_matchup() -> None:
     )
 
     if st.button("Build game plan", type="primary", disabled=not chosen):
+        # Simulate defaults its opponent to this team; drop its old pick so it follows.
+        st.session_state.pop("sim_team", None)
         st.session_state.team_matchup = _load(team_id, names[team_id], season, hand,
                                               [by_id[i] for i in chosen])
 
@@ -69,6 +76,9 @@ def render_team_matchup() -> None:
     if data["hand"] != hand:
         st.warning("Your throwing hand changed since this plan was built — click **Build game plan** again.")
         return
+    if "simulate" in PAGES and st.button(f"Practice against the {data['team']} in Simulate",
+                                         icon=":material/sports_esports:"):
+        st.switch_page(PAGES["simulate"])
     _render(data)
 
 
@@ -99,7 +109,8 @@ def _render(data: dict) -> None:
 
     st.markdown(f"#### {data['team']} — {data['season']} vs {data['hand']}HP")
     for profile in profiles:
-        render_hitter_card(profile, st.session_state.arsenal, mode)
+        arsenal = st.session_state.arsenal if profile_complete() else []
+        render_hitter_card(profile, arsenal, mode)
 
     if data["failed"]:
         st.caption("Skipped: " + "; ".join(data["failed"]))

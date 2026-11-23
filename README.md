@@ -1,25 +1,23 @@
-# ⚾ PitchIQ — AI Baseball Scouting Reports
+# ⚾ PitchIQ — Baseball Scouting for Pitchers
 
-**CS 1066 Final Project · V0.5 (PDF Extraction)**
+**CS 1066 Final Project · V0.7 (Game Plan + Simulator)**
 
-PitchIQ is a ChatGPT-style baseball scouting assistant: ask natural-language
-questions about hitters ("I throw a four-seam, slider, and changeup — how
-should I pitch to their cleanup hitter?") and get a conversational scouting
-report built around your arsenal.
-
-**V0.5 scope:** the minimal chat UI plus reliable PDF extraction for three
-real report formats. RAG and LLM-generated reports arrive in future
-iterations — the code is structured so they plug in without a rewrite.
+PitchIQ helps a pitcher prepare for an opponent: pick an MLB team, get a game
+plan for every hitter built from public Baseball Savant data and your own
+arsenal, then practice it against those hitters in the Pitch Simulator.
+Everything is computed by the program itself — no LLM — so results are
+deterministic and free to run.
 
 ## Pages
 
-- **Scout** (homepage) — search any MLB hitter and get his Baseball Savant
-  tendencies plus a plan built around your arsenal
-- **Ask PitchIQ** — the scouting chatbot (retrieval over Savant data + an LLM)
-- **Team Matchup** — pick an MLB team and get a plan for every hitter on the
-  active roster, most dangerous first
-- **Simulate** — face a team's lineup batter by batter in the Pitch Simulator,
-  with each hitter driven by his own Savant data (see below)
+Navigation runs along the top of the app, in the order of the main flow:
+
+- **Game Plan** (home) — pick an MLB team and get a plan for every hitter on
+  the active roster, most dangerous first; then jump straight to Simulate
+- **Simulate** — face that team's lineup batter by batter in the Pitch
+  Simulator, with each hitter driven by his own Savant data (see below)
+- **Hitter Lookup** — search any MLB hitter and get his Savant tendencies plus
+  a plan built around your arsenal
 - **My Arsenal** — pitcher profile, report uploads, pitch arsenal, and
   movement chart
 
@@ -35,9 +33,6 @@ iterations — the code is structured so they plug in without a rewrite.
 - **Extraction review** — the Scouting Library shows extracted hitters,
   statistics, source pages, and extraction errors; every table is editable so
   you can correct values before analysis
-- **Scouting chat** — natural-language questions, per-report analysis depth in
-  the composer, optional PDF attachments from the chat, demo-labeled responses
-  with evidence/context expanders
 - **Pitcher Profile** — throwing hand, editable pitch arsenal (type, velocity,
   usage, notes), and self-scouting notes (strengths / weaknesses / preferences)
 - **Pitch Movement Chart** — interactive HB vs. IVB plot (catcher's view) with
@@ -125,10 +120,11 @@ Streamlit will open the app in your browser (default: http://localhost:8501).
 ## Project Structure
 
 ```
-app.py                        # Entry point: page config, navigation, footer
+app.py                        # Entry point: page config, top navigation, footer
 assets/
-└── logo.svg                  # Sidebar logo
+└── logo.svg                  # Logo
 pitchiq/
+├── navigation.py             # Page registry so pages can link to each other
 ├── config.py                 # Constants: pitch types, analysis modes, limits
 ├── state.py                  # Session-state initialization & helpers
 ├── styles.py                 # Minimal dark-theme CSS
@@ -141,11 +137,13 @@ pitchiq/
 │   └── heatmap_report.py     # TruMedia heatmap pages (identify, don't invent)
 ├── services/
 │   ├── pdf_service.py        # Upload validation + extraction entry point
-│   └── report_service.py     # Report + answer assembly; future: RAG + LLM
+│   └── report_service.py     # Report assembly
 ├── static/
 │   └── simulator.html        # Built Pitch Simulator (from simulator/)
 └── ui/
-    ├── scout.py              # Chat homepage (composer, messages, evidence)
+    ├── team_matchup.py       # Game Plan page (home)
+    ├── scout.py              # Hitter Lookup page
+    ├── hitter_card.py        # Shared hitter card + profile loading
     ├── pitcher_profile.py    # Arsenal editor, movement chart, report import
     ├── uploads.py            # Dual PDF upload cards + extraction status
     ├── extracted.py          # Extraction review/correction UI
@@ -184,18 +182,7 @@ Uploaded files are held in session memory only.
 | V0.2 | ✅ Dark theme, upload cards, interactive pitch-movement chart |
 | V0.3 | ✅ Chat-style scouting workspace homepage + page navigation |
 | V0.4 | ✅ Minimal ChatGPT-style redesign |
-| **V0.5** | ✅ PDF extraction for pitcher, stats, and heatmap reports (this release) |
-| V0.6 | RAG over extracted scouting data |
-| V1.0 | LLM-generated personalized scouting reports |
-
-### How future versions plug in
-
-- `pitchiq/extraction/` is modular: each report format has its own parser and
-  a detector rule in `extract.py`; new formats add a module + rule. The
-  structured dict output is the contract RAG indexing will consume.
-- `report_service.answer_scouting_question()` powers the Scout workspace and
-  already receives the question, pitcher profile, uploaded-report metadata, and
-  depth — its internals swap from sample data to RAG retrieval + an LLM call.
-- `report_service.generate_scouting_report()` keeps its signature; its internals
-  swap from sample data to RAG + LLM output.
-- The UI renders whatever those services return, so no interface rewrite is needed.
+| V0.5 | ✅ PDF extraction for pitcher, stats, and heatmap reports |
+| V0.6 | ✅ MLB hitters from Baseball Savant, Team Matchup, Pitch Simulator |
+| **V0.7** | ✅ Top navigation built around Game Plan → Simulate; chatbot removed (this release) |
+| Next | Accounts with Supabase and a hosted, shareable link |

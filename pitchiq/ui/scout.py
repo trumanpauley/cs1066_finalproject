@@ -1,4 +1,4 @@
-"""Scout page (home): search any MLB hitter, see his tendencies and a plan vs. your arsenal."""
+"""Hitter Lookup page: search any MLB hitter, see his tendencies and a plan vs. your arsenal."""
 
 from __future__ import annotations
 

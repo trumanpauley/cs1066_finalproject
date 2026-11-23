@@ -33,11 +33,7 @@ _DEFAULTS: dict = {
     "scout_recent": [],      # recently searched hitter dicts, newest first
     "scout_search": None,    # search box value (cleared after each pick)
     "hitter_profiles": {},   # "id:season:hand" -> computed hitter profile (shared by pages)
-    # Ask PitchIQ (chatbot)
-    "chat_log": [],          # what's shown: role, content, depth, sources, cost
-    "chat_backend": None,    # Claude or Gemini chat backend; holds the API-side conversation
-    "chat_sent_ids": [],     # document/chunk ids already in the conversation
-    # Team Matchup
+    # Game Plan (team matchup)
     "team_matchup": None,    # last built team plan: team, season, hand, profiles, failed
 }
 
@@ -53,7 +49,7 @@ def init_state() -> None:
 
 
 def current_profile() -> dict:
-    """The saved-profile fields as a plain dict (for saving and the knowledge base)."""
+    """The saved-profile fields as a plain dict (for saving)."""
     return {key: st.session_state.get(key) for key in PERSISTED_KEYS}
 
 

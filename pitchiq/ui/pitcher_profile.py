@@ -1,7 +1,6 @@
 """My Arsenal: who you are, your reports, your pitches in your own words.
 
-Everything here is saved automatically (pitchiq/profile_store.py) and turned
-into the knowledge base the scouting chatbot will search (pitchiq/knowledge).
+Everything here is saved automatically (pitchiq/profile_store.py).
 
 Widget pattern: every input has its own widget key ("w_..." / "q_...") that is
 seeded from the saved value only when the widget has no state yet. That keeps
@@ -27,7 +26,6 @@ from pitchiq.arsenal import (
 from pitchiq.config import MAX_UPLOAD_MB, MOVEMENT_RANGE, PITCH_COLORS, PITCH_TYPES, THROWING_HANDS
 from pitchiq.data.sample_data import DEFAULT_ARSENAL
 from pitchiq.extraction import extract_report, extract_text
-from pitchiq.knowledge import build_chunks, pitcher_documents
 from pitchiq.profile_store import PROFILE_DIR, content_id, delete_upload, save_profile, save_upload
 from pitchiq.state import current_profile
 
@@ -39,7 +37,7 @@ def render_pitcher_profile() -> None:
     st.markdown("### My Arsenal")
     st.caption(
         "Everything PitchIQ knows about you: your reports, your pitches, and how you "
-        "like to use them. Game plans on Scout and Team Matchup are built from this."
+        "like to use them. Game plans on Game Plan and Hitter Lookup are built from this."
     )
 
     _render_identity()
@@ -47,7 +45,6 @@ def render_pitcher_profile() -> None:
     _render_pitches()
     _render_movement_section()
     _render_self_scouting()
-    _render_knowledge_preview()
     _autosave()
 
 
@@ -93,7 +90,7 @@ def _render_reports() -> None:
     st.caption(
         "Upload your pitching reports (Sockeye process reports) — every outing is combined "
         "into your season numbers below. Anything else (coach's notes, a bullpen plan, a "
-        "PDF or text file) is saved as notes for the scouting assistant."
+        "PDF or text file) is saved as notes on your profile."
     )
     nonce = st.session_state.setdefault("upload_nonce", 0)
     files = st.file_uploader("Upload reports or notes", type=UPLOAD_TYPES, accept_multiple_files=True,
@@ -404,25 +401,6 @@ def _render_self_scouting() -> None:
         _seed(key, st.session_state[field])
         with cols[i % 2]:
             st.session_state[field] = st.text_area(label, key=key, height=120, placeholder=placeholder)
-
-
-# ---------------------------------------------------------------------------
-# Knowledge base preview (what the RAG chatbot will search)
-# ---------------------------------------------------------------------------
-
-def _render_knowledge_preview() -> None:
-    docs = pitcher_documents(current_profile())
-    chunks = build_chunks(docs)
-    with st.expander(f"What PitchIQ knows about you · {len(docs)} documents, {len(chunks)} chunks"):
-        st.caption(
-            "This is your side of the knowledge base the scouting chatbot will search: one "
-            "document for your overview, each pitch, each outing, and each notes file. "
-            "MLB hitter data gets the same treatment. Long documents are split into chunks "
-            "so the right piece can be retrieved."
-        )
-        for doc in docs:
-            st.markdown(f"**{doc.title}** · `{doc.kind}`")
-            st.code(doc.text, language=None, wrap_lines=True)
 
 
 def _autosave() -> None:

@@ -37,7 +37,7 @@ from pitchiq.ui.hitter_card import (
 
 _BUILD = Path(__file__).resolve().parent.parent / "static" / "simulator.html"
 _HEIGHT = 1060
-DEFAULT_TEAM_ID = 158  # Milwaukee Brewers, same default as Team Matchup
+DEFAULT_TEAM_ID = 158  # Milwaukee Brewers, same default as Game Plan
 # MLB's public headshot images; unknown ids fall back to a generic silhouette.
 HEADSHOT_URL = ("https://img.mlbstatic.com/mlb-photos/image/upload/"
                 "d_people:generic:headshot:67:current.png/w_213,q_auto:best/v1/people/{id}/headshot/67/current")
@@ -112,7 +112,7 @@ def _lineup_picker(hand: str) -> dict | None:
     abbrevs = {t["id"]: t["abbreviation"] for t in teams}
     ids = list(names)
 
-    # Default to the team scouted on Team Matchup, so prep flows into practice.
+    # Default to the team scouted on Game Plan, so prep flows into practice.
     scouted = (st.session_state.get("team_matchup") or {}).get("team_id")
     default = scouted if scouted in ids else DEFAULT_TEAM_ID
     with st.container(border=True):

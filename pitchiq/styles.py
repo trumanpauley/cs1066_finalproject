@@ -41,34 +41,7 @@ h1, h2, h3, h4 {
     margin: 0;
 }
 
-/* ---------- Tags on assistant messages ---------- */
-.depth-tag {
-    display: inline-block;
-    background: rgba(122, 162, 247, 0.12);
-    border: 1px solid rgba(122, 162, 247, 0.35);
-    color: #9db8f9;
-    border-radius: 999px;
-    padding: 0.08rem 0.65rem;
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.4px;
-    text-transform: uppercase;
-}
-.demo-tag {
-    display: inline-block;
-    background: rgba(139, 147, 163, 0.1);
-    border: 1px solid #333945;
-    color: #8b93a3;
-    border-radius: 999px;
-    padding: 0.08rem 0.65rem;
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.4px;
-    text-transform: uppercase;
-    margin-left: 0.3rem;
-}
-
-/* ---------- Composer context line ---------- */
+/* ---------- Context line ---------- */
 .context-line {
     color: #8b93a3;
     font-size: 0.8rem;

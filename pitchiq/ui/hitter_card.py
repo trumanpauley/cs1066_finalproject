@@ -1,4 +1,4 @@
-"""Shared hitter card + profile loading for the Scout and Team Matchup pages."""
+"""Shared hitter card + profile loading for the Hitter Lookup and Game Plan pages."""
 
 from __future__ import annotations
 
